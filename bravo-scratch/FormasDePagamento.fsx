@@ -2,27 +2,27 @@ open System
 module FormasDePagamentoDomain=
     // https://fsharpforfunandprofit.com/posts/units-of-measure/
     // https://markheath.net/post/avoid-silly-mistakes-fsharp-units-of-measure
-    [<Measure>] type Moeda
+    [<Measure>] type Dinheiro
     type Data = DateOnly
 
     type Pix = {
         InstituicaoFinanceira : string
         Transacao : string
-        Valor : decimal<Moeda>
+        Valor : decimal<Dinheiro>
     }
     
     type CartaoDeCredito = {
         InstituicaoFinanceira : string
         Bandeira : string
         Transacao : string
-        Valor : decimal<Moeda>
+        Valor : decimal<Dinheiro>
     }
 
     type Cheque = {
         Cnpj : string
         Nome : string
         DataDeVencimento : Data
-        Valor : decimal<Moeda>
+        Valor : decimal<Dinheiro>
     }
 
     type TiposDeCrediario =
@@ -34,11 +34,11 @@ module FormasDePagamentoDomain=
         TipoDeDocumento : TiposDeCrediario
         Nome : string
         DataDeVencimento : Data
-        Valor : decimal<Moeda>
+        Valor : decimal<Dinheiro>
     }
 
     type FormaDePagamento =
-        | Dinheiro of decimal<Moeda>
+        | Dinheiro of decimal<Dinheiro>
         | Pix of Pix
         | Cheque of Cheque
         | Crediario of Crediario
@@ -67,12 +67,12 @@ let imprimirBlocoFormaDePagamento cabecalho registros =
     |> List.iter (fun x -> printfn $"linha {descrever x}")
 let pagamentos: FormaDePagamento list=
     [
-        Dinheiro 10.0m<Moeda>
-        Pix { InstituicaoFinanceira = "Banco do Brasil"; Transacao = "abc"; Valor = 16.0m<Moeda> }
-        Crediario {TipoDeDocumento = Promissoria;  Nome = "diego"; DataDeVencimento = DateOnly.FromDateTime(DateTime.UtcNow); Valor = 110m<Moeda>}
-        Dinheiro 21.0m<Moeda>
-        Pix { InstituicaoFinanceira = "Bradesco"; Transacao = "dfe"; Valor = 27.0m<Moeda> }
-        Crediario {TipoDeDocumento = Promissoria;  Nome = "diego"; DataDeVencimento = DateOnly.FromDateTime(DateTime.UtcNow); Valor = 110m<Moeda>}
+        Dinheiro 10.0m<Dinheiro>
+        Pix { InstituicaoFinanceira = "Banco do Brasil"; Transacao = "abc"; Valor = 16.0m<Dinheiro> }
+        Crediario {TipoDeDocumento = Promissoria;  Nome = "diego"; DataDeVencimento = DateOnly.FromDateTime(DateTime.UtcNow); Valor = 110m<Dinheiro>}
+        Dinheiro 21.0m<Dinheiro>
+        Pix { InstituicaoFinanceira = "Bradesco"; Transacao = "dfe"; Valor = 27.0m<Dinheiro> }
+        Crediario {TipoDeDocumento = Promissoria;  Nome = "diego"; DataDeVencimento = DateOnly.FromDateTime(DateTime.UtcNow); Valor = 110m<Dinheiro>}
     ]
 let imprimirFluxoDeCaixaSintético (categoriaDePagamento, pagamentos) =
     match categoriaDePagamento with
