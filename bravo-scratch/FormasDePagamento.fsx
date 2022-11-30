@@ -1,7 +1,5 @@
 open System
 module FormasDePagamentoDomain=
-    // https://fsharpforfunandprofit.com/posts/units-of-measure/
-    // https://markheath.net/post/avoid-silly-mistakes-fsharp-units-of-measure
     [<Measure>] type Dinheiro
     type Data = DateOnly
 
@@ -83,6 +81,6 @@ let imprimirFluxoDeCaixaSintético (categoriaDePagamento, pagamentos) =
     | PagoEmCartaoDeCredito ->  imprimirBlocoFormaDePagamento "Cartões de Crédito" pagamentos
     
 pagamentos
-|> List.groupBy (categorizar)
+|> List.groupBy categorizar
 |> List.sortDescending
 |> List.iter imprimirFluxoDeCaixaSintético
