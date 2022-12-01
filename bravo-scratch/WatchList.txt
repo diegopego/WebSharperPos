@@ -1,0 +1,5 @@
+advent of code in f#
+https://markheath.net/category/f%23
+
+https://fsharpforfunandprofit.com/posts/units-of-measure/
+https://markheath.net/post/avoid-silly-mistakes-fsharp-units-of-measure

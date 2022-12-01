@@ -1,3 +1,9 @@
+// FYI I use SQL for report generation. The code I last shown you was intended to practice pattern matching.
+// Is there a library to represent money?
+// Is it possible to pass custom argument to Sitelet.Infer? e.g. DateOnly
+// I tried to use WebSharper on FSI and got error FS0039: The namespace or module'WebSharper' is not defined.
+
+
 // Hi Adam!
 //
 // I tried WebSharper on Linux and it worked just fine on dotnet 6.
@@ -48,8 +54,8 @@ let print header records =
 
 [Cash 5.0m; WireTransfer 4.0m; WireTransfer 2.0m; Cash 5m]
 |> List.groupBy categorize
-|> List.iter (fun (paymentType, paymentList) ->
-    match paymentType with
+|> List.iter (fun (paymentsCategory, paymentList) ->
+    match paymentsCategory with
     | PaidInCash -> print "Cash" paymentList
     | PaidInWireTransfer -> print "Wire transfer" paymentList
 )

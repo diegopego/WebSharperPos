@@ -1,14 +1,18 @@
 namespace WebSharperTest
 
+open System
+open System.Transactions
 open WebSharper
+open WebSharper.JavaScript
 open WebSharper.Sitelets
 open WebSharper.UI
 open WebSharper.UI.Server
+open System
 
 type EndPoint =
     | [<EndPoint "/">] Home
     | [<EndPoint "/about">] About
-    | [<EndPoint "/echo">] Echo of s:string
+    | [<EndPoint "/cash-flow">] CashFlow of DateTime
 
 module Templating =
     open WebSharper.UI.Html
@@ -32,7 +36,6 @@ module Templating =
                 .Body(body)
                 .Doc()
         )
-
 module Site =
     open WebSharper.UI.Html
 
@@ -49,6 +52,28 @@ module Site =
             h1 [] [text "About"]
             p [] [text "This is a template WebSharper client-server application."]
         ]
+        
+    open PaymentFormsDomain
+    open PaymentsHtmlRenderer
+        
+    let CashFlowReportPage ctx date =
+        let title = $"Cash Flow {date}"
+        let payments =
+            [
+                Money 10.0m<Money>
+                Pix { FinancialInstitution = "Banco do Brasil"; TransactionId = "abc"; Value = 16.0m<Money> }
+                CreditCard {Flag = "Mastercard"; TransactionId = ""; Value = 110m<Money>}
+                Money 21.0m<Money>
+                Pix { FinancialInstitution = "Bradesco"; TransactionId = "dfe"; Value = 27.0m<Money> }
+                CreditCard {Flag = "Visa"; TransactionId = ""; Value = 18.19m<Money>}
+            ]
+            
+        Templating.Main ctx EndPoint.Home title [
+            Templates.ReportTemplate()
+                .Title(title)
+                .TableRows(Doc.Concat (renderCashFlowInHtml payments))
+                .Doc()
+        ] 
 
     [<Website>]
     let Main =
@@ -56,5 +81,5 @@ module Site =
             match endpoint with
             | EndPoint.Home -> HomePage ctx
             | EndPoint.About -> AboutPage ctx
-            | EndPoint.Echo s -> Content.Json {| Origem = "Ubuntu Virtualbox"; Echo = $"echo {s}" |} 
+            | EndPoint.CashFlow date -> CashFlowReportPage ctx date
         )

@@ -19,14 +19,14 @@
  TemplateInstance=Server&&Server.TemplateInstance;
  Client$1=UI&&UI.Client;
  Templates=Client$1&&Client$1.Templates;
- Client.Main$19$20=function(rvReversed)
+ Client.Main$20$20=function(rvReversed)
  {
   return function(e)
   {
    var _;
    Concurrency.StartImmediate((_=null,Concurrency.Delay(function()
    {
-    return Concurrency.Bind((new AjaxRemotingProvider.New()).Async("WebSharperTest:WebSharperTest.Server.DoSomething:235072806",[e.Vars.Hole("texttoreverse").$1.Get()]),function(a)
+    return Concurrency.Bind((new AjaxRemotingProvider.New()).Async("WebSharperTest:WebSharperTest.Server.DoSomething:-1734092795",[e.Vars.Hole("texttoreverse").$1.Get()]),function(a)
     {
      rvReversed.Set(a);
      return Concurrency.Zero();
@@ -46,7 +46,7 @@
    var _;
    Concurrency.StartImmediate((_=null,Concurrency.Delay(function()
    {
-    return Concurrency.Bind((new AjaxRemotingProvider.New()).Async("WebSharperTest:WebSharperTest.Server.DoSomething:235072806",[e.Vars.Hole("texttoreverse").$1.Get()]),function(a)
+    return Concurrency.Bind((new AjaxRemotingProvider.New()).Async("WebSharperTest:WebSharperTest.Server.DoSomething:-1734092795",[e.Vars.Hole("texttoreverse").$1.Get()]),function(a)
     {
      rvReversed.Set(a);
      return Concurrency.Zero();
