@@ -1,7 +1,8 @@
 namespace WebSharperTest
 
 open System
-
+open WebSharper
+[<JavaScript>]
 module PaymentFormsDomain=
     [<Measure>] type Money
     type Data = System.DateOnly
@@ -43,7 +44,20 @@ module PaymentFormsDomain=
         | Cheque of Cheque
         | Crediario of Crediario
         | CreditCard of CreditCard
-        
+module PaymentsReporting=
+    open PaymentFormsDomain
+    let GetPaymentsByDate date =
+        [
+            Money 10.0m<Money>
+            Pix { FinancialInstitution = "Banco do Brasil"; TransactionId = "abc"; Value = 16.0m<Money> }
+            CreditCard {Flag = "Mastercard"; TransactionId = ""; Value = 110m<Money>}
+            Money 21.0m<Money>
+            Pix { FinancialInstitution = "Bradesco"; TransactionId = "dfe"; Value = 27.0m<Money> }
+            CreditCard {Flag = "Visa"; TransactionId = ""; Value = 18.19m<Money>}
+        ]
+    let GenerateCashFlowReport (date:DateTime)=
+        GetPaymentsByDate date |> List.sort
+[<JavaScript>]        
 module PaymentsTxtRenderer=
     open PaymentFormsDomain
     let renderPaymentInTxt (forma:PaymentForm) =
@@ -58,7 +72,7 @@ module PaymentsTxtRenderer=
         pagamentos
         |> List.sort
         |> List.map renderPaymentInTxt
-        
+[<JavaScript>]
 module PaymentsHtmlRenderer=
     open PaymentFormsDomain
     open WebSharper.UI.Html

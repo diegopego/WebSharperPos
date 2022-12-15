@@ -1,5 +1,6 @@
 ﻿namespace WebSharperTest
 
+open System
 open WebSharper
 
 module Server =
@@ -9,4 +10,10 @@ module Server =
         let R (s: string) = System.String(Array.rev(s.ToCharArray()))
         async {
             return R input
+        }
+    [<Rpc>]
+    let GenerateCashFlowReport (date:DateTime) =
+        async {
+            return PaymentsReporting.GenerateCashFlowReport date
+            // return ["Credit Card 100.00"; "Cash 50.00"]
         }

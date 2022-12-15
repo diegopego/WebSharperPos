@@ -53,26 +53,11 @@ module Site =
             p [] [text "This is a template WebSharper client-server application."]
         ]
         
-    open PaymentFormsDomain
-    open PaymentsHtmlRenderer
-        
     let CashFlowReportPage ctx date =
         let title = $"Cash Flow {date}"
-        let payments =
-            [
-                Money 10.0m<Money>
-                Pix { FinancialInstitution = "Banco do Brasil"; TransactionId = "abc"; Value = 16.0m<Money> }
-                CreditCard {Flag = "Mastercard"; TransactionId = ""; Value = 110m<Money>}
-                Money 21.0m<Money>
-                Pix { FinancialInstitution = "Bradesco"; TransactionId = "dfe"; Value = 27.0m<Money> }
-                CreditCard {Flag = "Visa"; TransactionId = ""; Value = 18.19m<Money>}
-            ]
-            
         Templating.Main ctx EndPoint.Home title [
-            Templates.ReportTemplate()
-                .Title(title)
-                .TableRows(Doc.Concat (renderCashFlowInHtml payments))
-                .Doc()
+            h1 [] [text "Cash Flor Report"]
+            div [] [client (Client.RetrieveCashFlowReport())]
         ] 
 
     [<Website>]

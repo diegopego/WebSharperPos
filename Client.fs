@@ -1,9 +1,13 @@
 ﻿namespace WebSharperTest
 
 open WebSharper
+open WebSharper.JavaScript
 open WebSharper.UI
 open WebSharper.UI.Templating
 open WebSharper.UI.Notation
+open WebSharper.UI.Html
+open WebSharper.Sitelets
+open WebSharperTest.PaymentFormsDomain
 
 [<JavaScript>]
 module Templates =
@@ -26,3 +30,14 @@ module Client =
             )
             .Reversed(rvReversed.View)
             .Doc()
+
+    let RetrieveCashFlowReport () =
+        async {
+            let! res = Server.GenerateCashFlowReport System.DateTime.Now
+            let renderItem (payment:PaymentForm) = tr [] [ td [] [text (PaymentsTxtRenderer.renderPaymentInTxt payment) ] ]
+            // let renderItem (payment:string) = tr [] [ td [] [text (payment) ] ]
+            return Templates.MainTemplate.MainTable().TableRows(
+                    List.map renderItem res |> Doc.Concat
+                    ).Doc()
+        }
+        |> Client.Doc.Async
