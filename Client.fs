@@ -1,12 +1,10 @@
 ﻿namespace WebSharperTest
 
 open WebSharper
-open WebSharper.JavaScript
 open WebSharper.UI
 open WebSharper.UI.Templating
 open WebSharper.UI.Notation
 open WebSharper.UI.Html
-open WebSharper.Sitelets
 open WebSharperTest.PaymentFormsDomain
 
 [<JavaScript>]
@@ -32,12 +30,25 @@ module Client =
             .Doc()
 
     let RetrieveCashFlowReport () =
-        async {
-            let! res = Server.GenerateCashFlowReport System.DateTime.Now
-            let renderItem (payment:PaymentForm) = tr [] [ td [] [text (PaymentsTxtRenderer.renderPaymentInTxt payment) ] ]
-            // let renderItem (payment:string) = tr [] [ td [] [text (payment) ] ]
-            return Templates.MainTemplate.MainTable().TableRows(
-                    List.map renderItem res |> Doc.Concat
-                    ).Doc()
-        }
-        |> Client.Doc.Async
+        Templates.MainTemplate.ReportForm()
+            .OnSend(fun e ->
+                async {
+                    let! res = Server.GenerateCashFlowReport System.DateTime.Now
+                    let renderItem (payment:PaymentForm) = tr [] [ td [] [text (PaymentsTxtRenderer.renderPaymentInTxt payment) ] ]
+                    Templates.MainTemplate.ReportTable().ReportRows(
+                            List.map renderItem res |> Doc.Concat
+                            ).Doc()
+                    |> Client.Doc.RunById "report-container"
+                } |> Async.StartImmediate
+            )
+            .Doc()
+        
+        // render the reults directly 
+        // async {
+        //     let! res = Server.GenerateCashFlowReport System.DateTime.Now
+        //     let renderItem (payment:PaymentForm) = tr [] [ td [] [text (PaymentsTxtRenderer.renderPaymentInTxt payment) ] ]
+        //     return Templates.MainTemplate.ReportTable().ReportRows(
+        //             List.map renderItem res |> Doc.Concat
+        //             ).Doc()
+        // }
+        // |> Client.Doc.Async

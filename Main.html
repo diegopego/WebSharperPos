@@ -93,11 +93,19 @@
             </div>
         </div>
     </div>
-    <div ws-template="MainTable">
-        <table>
-            <div ws-replace="TableRows"></div>
-        </table>
+    
+    <div ws-template="ReportForm">
+        <button ws-onclick="OnSend">Report</button>
+        <hr />
+        <h4 class="text-muted">Cash Flow Report:</h4>
+        <div id="report-container"></div>
+        <div ws-template="ReportTable">
+            <table>
+                <div ws-replace="ReportRows"></div>
+            </table>
+        </div>
     </div>
+    
     <footer class="footer">
         <div class="container">
             <p class="text-muted">

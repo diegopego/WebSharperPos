@@ -56,7 +56,6 @@ module Site =
     let CashFlowReportPage ctx date =
         let title = $"Cash Flow {date}"
         Templating.Main ctx EndPoint.Home title [
-            h1 [] [text "Cash Flor Report"]
             div [] [client (Client.RetrieveCashFlowReport())]
         ] 
 
