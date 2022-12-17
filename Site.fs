@@ -12,7 +12,8 @@ open System
 type EndPoint =
     | [<EndPoint "/">] Home
     | [<EndPoint "/about">] About
-    | [<EndPoint "/cash-flow">] CashFlow of DateTime
+    | [<EndPoint "/point-of-sale">] PointOfSale
+    | [<EndPoint "/cash-flow">] CashFlow
 
 module Templating =
     open WebSharper.UI.Html
@@ -26,6 +27,8 @@ module Templating =
         [
             "Home" => EndPoint.Home
             "About" => EndPoint.About
+            "Point of sale" => EndPoint.PointOfSale
+            "Cash Flow Report" => EndPoint.CashFlow
         ]
 
     let Main ctx action (title: string) (body: Doc list) =
@@ -53,11 +56,16 @@ module Site =
             p [] [text "This is a template WebSharper client-server application."]
         ]
         
-    let CashFlowReportPage ctx date =
-        let title = $"Cash Flow {date}"
-        Templating.Main ctx EndPoint.Home title [
+    let CashFlowReportPage ctx =
+        let title = $"Cash Flow Report"
+        Templating.Main ctx EndPoint.CashFlow title [
             div [] [client (Client.RetrieveCashFlowReport())]
-        ] 
+        ]
+    let PointOfSale ctx =
+        Templating.Main ctx EndPoint.PointOfSale "Point of sale" [
+            h1 [] [text "About"]
+            p [] [text "This is a template WebSharper client-server application."]
+        ]
 
     [<Website>]
     let Main =
@@ -65,5 +73,6 @@ module Site =
             match endpoint with
             | EndPoint.Home -> HomePage ctx
             | EndPoint.About -> AboutPage ctx
-            | EndPoint.CashFlow date -> CashFlowReportPage ctx date
+            | EndPoint.PointOfSale -> PointOfSale ctx
+            | EndPoint.CashFlow -> CashFlowReportPage ctx
         )
