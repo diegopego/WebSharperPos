@@ -2,11 +2,10 @@ namespace WebSharperTest
 
 open System
 open WebSharper
+open WebSharperTest.Domain
+
 [<JavaScript>]
 module PaymentFormsDomain=
-    [<Measure>] type Money
-    type Data = System.DateOnly
-
     type Pix = {
         FinancialInstitution : string
         TransactionId : string
