@@ -69,16 +69,26 @@ module Client =
         Datetime: DateTime
         Items: TransactionItem list
         }    
+    let ShowErrorsFor v =
+        v
+        |> View.Map (function
+            | Success _ -> Doc.Empty
+            | Failure errors ->
+                Doc.Concat [
+                    for error in errors do
+                        yield b [attr.style "color:red"] [text error.Text] ] )
+        |> Doc.EmbedView
     let TransactionForm () =
+        let transactionUidVar = Var.Create (System.Guid.NewGuid().ToString())
         let priceVar = Var.Create (CheckedInput.Make 0.0)
         let quantityVar = Var.Create (CheckedInput.Make 0.0)
         // <*> compose must be in the same order of the arguments (fun user pass -> user, pass)
         Form.Return (fun transactionUid sku description price quantity -> transactionUid, sku, description, price, quantity)
-        <*> (Form.Yield "" // transactionUid
-            |> Validation.IsNotEmpty "Must enter a username")
+        <*> (Form.YieldVar transactionUidVar) // transactionUid
         <*> (Form.Yield "" // sku
             |> Validation.IsNotEmpty "Must enter a SKU")
-        <*> (Form.Yield "") // description
+        <*> (Form.Yield "" // description
+            |> Validation.IsNotEmpty "Must enter a description")
         <*> (Form.YieldVar priceVar
             |> Validation.Is (fun x -> float x.Input > 0.0) "Price must be positive number"
             |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Price must have up to two decimal places"
@@ -88,25 +98,40 @@ module Client =
             |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Quantity must have up to two decimal places"
             )
         |> Form.WithSubmit // without this, the validation will run at each keystroke. add the submit button
+        // ordem dos argumentos deve ser igual
         |> Form.Run (fun (transactionUid, sku, description, price, quantity) ->
             let priceToPersist:decimal<Money> = (decimal price.Input) * 1.0m<Money>
-            JS.Alert($"Item price {priceToPersist}")
+            let quantityToPersist:decimal<Quantity> = (decimal quantity.Input) * 1.0m<Quantity>
+            // // ponto de esclarecimento da unidade de medida:
+            // // let total = priceToPersist + quantityToPersist
+            // // let total = priceToPersist * quantityToPersist
+            // // ponto de esclarecimento. dentro do formulário usa um tipo intermediário, mais relaxado, e aqui colhe os benefícios do tipo do "Domínio"
+            let transactionItem:TransactionItem = {Sku=sku; Description=description; Price=priceToPersist; Quantity=quantityToPersist}
+            JS.Alert($"Transaction UID: {transactionUid} Item: {transactionItem.Description} Price: {transactionItem.Price}")
         )
         |> Form.Render (fun transactionUid sku description price quantity submit ->
             // visual representation. fun user pass must be in the same order as Form.Return (fun user pass -> user, pass)
             // inside the representation, the order is meaningless.
             div [] [
-                div [] [label [] [text "transactionUid: "]; Doc.Input [] transactionUid]
-                div [] [label [] [text "sku: "]; Doc.Input [] sku]
-                div [] [label [] [text "description: "]; Doc.Input [] description]
-                div [] [label [] [text "price: "]; Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] price]
-                div [] [label [] [text "quantity: "]; Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] quantity]
-                Doc.Button "Ok" [] submit.Trigger
                 div [] [
-                    Doc.ShowErrors submit.View (fun errors ->
-                        errors
-                        |> Seq.map (fun m -> p [] [text m.Text])
-                        |> Doc.Concat)
+                    label [] [text "transactionUid: "]; label [] [text transactionUid.Value]
                 ]
+                div [] [
+                    label [] [text "sku: "]; Doc.Input [] sku
+                    ShowErrorsFor (submit.View.Through sku)
+                ]
+                div [] [
+                    label [] [text "description: "]; Doc.Input [] description
+                    ShowErrorsFor (submit.View.Through description)
+                ]
+                div [] [
+                    label [] [text "price: "]; Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] price
+                    ShowErrorsFor (submit.View.Through price)
+                ]
+                div [] [
+                    label [] [text "quantity: "]; Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] quantity
+                    ShowErrorsFor (submit.View.Through quantity)
+                ]
+                Doc.Button "Ok" [] submit.Trigger
             ]
         )
