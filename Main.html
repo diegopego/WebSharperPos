@@ -59,7 +59,51 @@
         caption {
             padding: 10px;
         }
-        
+
+        .flex-container {
+            display: flex;
+        }
+        .registerItemsArea {
+            flex: 1;
+            margin-left: 30px;
+        }
+
+        .registeredItemsArea {
+            margin-right: 30px;
+        }
+
+        button {
+            background: darkslateblue;
+            color: white;
+            box-shadow: none;
+            border-radius: 5px;
+        }
+
+        .checkout-control {
+            margin-top: 30px;
+        }
+
+        button:disabled {
+            background: lightgrey;
+            color: black;
+            cursor: not-allowed;
+        }
+
+        span + button {
+            margin-left: 8px;
+        }
+
+        .itemToAdd {
+            margin-bottom: 20px;
+        }
+
+        .itemToAdd span {
+            font-weight: bold;
+        }
+        .item {
+            margin-top: 3px;
+            margin-bottom: 3px;
+        }
     </style>
 </head>
 <body>
@@ -103,6 +147,21 @@
             <table>
                 <div ws-replace="ReportRows"></div>
             </table>
+        </div>
+    </div>
+
+    <div ws-template="TransactionArea" class="flex-container">
+        <div class="registerItemsArea">
+            <div ws-hole="RegisterItems"></div>
+        </div>
+        <div class="registeredItemsArea">
+            <div> Registered items </div>
+            <button ws-onclick="StartPayment">
+                Payment
+            </button>
+            <div style="margin-top: 15px;">
+                <div class="items" ws-hole="RegisteredItems"></div>
+            </div>
         </div>
     </div>
     

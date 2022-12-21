@@ -85,16 +85,8 @@ module Client =
         Form.YieldVar transactionItems
         |> Form.WithSubmit
         
-    let CheckoutForm () =
+    let RegisteredItemsForm () =
         CartForm ()
-        // |> Form.Run (fun items ->
-        //     JS.Alert
-        //         <| sprintf "You have ordered: %s" (
-        //             items
-        //             |> List.map (fun item ->
-        //             $"{item.Description} {item.Price}")
-        //             |> String.concat ",")
-        // )
         |> Form.Render (fun itemsInCart _ ->
             itemsInCart.View
             |> Doc.BindView (fun items ->
@@ -164,3 +156,9 @@ module Client =
                 Doc.Button "Ok" [] submit.Trigger
             ]
         )
+    
+    let TransactionArea () =
+        Templates.MainTemplate.TransactionArea()
+            .RegisterItems(TransactionForm())
+            .RegisteredItems(RegisteredItemsForm())
+            .Doc()
