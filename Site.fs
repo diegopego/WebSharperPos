@@ -62,7 +62,8 @@ module Site =
     let PointOfSale ctx =
         Templating.Main ctx EndPoint.PointOfSale "Point of sale" [
             h1 [] [text "Point of sale"]
-            client (Client.TransactionForm())
+            client (Client.TransactionForm ())
+            client (Client.CheckoutForm ())
         ]
 
     [<Website>]

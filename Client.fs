@@ -78,6 +78,34 @@ module Client =
                     for error in errors do
                         yield b [attr.style "color:red"] [text error.Text] ] )
         |> Doc.EmbedView
+    let transactionItems: Var<List<TransactionItem>> = Var.Create List.empty
+    let CartForm () =
+        // Form.Return id // id function is equivalent to (fun x -> x)
+        // <*> Form.YieldVar transactionItems
+        Form.YieldVar transactionItems
+        |> Form.WithSubmit
+        
+    let CheckoutForm () =
+        CartForm ()
+        // |> Form.Run (fun items ->
+        //     JS.Alert
+        //         <| sprintf "You have ordered: %s" (
+        //             items
+        //             |> List.map (fun item ->
+        //             $"{item.Description} {item.Price}")
+        //             |> String.concat ",")
+        // )
+        |> Form.Render (fun itemsInCart _ ->
+            itemsInCart.View
+            |> Doc.BindView (fun items ->
+                items
+                |> List.map (fun item ->
+                    div [attr.``class`` "item"] [text item.Description]
+                    )
+                |> Doc.Concat
+                )
+            )
+        
     let TransactionForm () =
         let transactionUidVar = Var.Create (System.Guid.NewGuid().ToString())
         let priceVar = Var.Create (CheckedInput.Make 0.0)
@@ -107,7 +135,8 @@ module Client =
             // // let total = priceToPersist * quantityToPersist
             // // ponto de esclarecimento. dentro do formulário usa um tipo intermediário, mais relaxado, e aqui colhe os benefícios do tipo do "Domínio"
             let transactionItem:TransactionItem = {Sku=sku; Description=description; Price=priceToPersist; Quantity=quantityToPersist}
-            JS.Alert($"Transaction UID: {transactionUid} Item: {transactionItem.Description} Price: {transactionItem.Price}")
+            transactionItems.Update(fun items -> List.append items [transactionItem])
+            //JS.Alert($"Transaction UID: {transactionUid} Item: {transactionItem.Description} Price: {transactionItem.Price}")
         )
         |> Form.Render (fun transactionUid sku description price quantity submit ->
             // visual representation. fun user pass must be in the same order as Form.Return (fun user pass -> user, pass)
