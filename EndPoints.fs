@@ -4,7 +4,7 @@ open WebSharper
 module EndPoints=
     type SPA =
         | [<EndPoint "/point-of-sale">] PointOfSale
-        | [<EndPoint "/point-of-sale">] Point of string
+        | [<EndPoint "/point-of-sale/checkout">] Checkout
     type EndPoint =
         | [<EndPoint "/">] Home
         | [<EndPoint "/about">] About

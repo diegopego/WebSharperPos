@@ -159,10 +159,13 @@ module Client =
             ]
         )
     
-    let TransactionArea () =
+    let TransactionArea (routerLocation:Var<SPA>) =
         Templates.MainTemplate.TransactionArea()
             .RegisterItems(TransactionForm())
             .RegisteredItems(RegisteredItemsForm())
+            .StartPayment(fun _ ->
+                routerLocation.Set SPA.Checkout
+                )
             .Doc()
             
     let PointOfSaleMain () =
@@ -175,12 +178,12 @@ module Client =
             | SPA.PointOfSale ->
                 Doc.Concat [
                     h1 [] [text "SPA point of sale"]
-                    a [attr.href (router.Link (EndPoint.SPA (SPA.Point "POS 001")))] [text "link to POS 001"]
-                    TransactionArea ()
+                    a [attr.href (router.Link (EndPoint.SPA SPA.Checkout))] [text "link to POS 001"]
+                    TransactionArea (location)
                 ]
-            | SPA.Point point ->
+            | SPA.Checkout ->
                 Doc.Concat [
-                    h1 [] [text $"SPA point {point}"]
+                    h1 [] [text $"SPA checkout"]
                     a [attr.href (router.Link (EndPoint.SPA (SPA.PointOfSale)))] [text "Back to POS"]
                 ]
             )

@@ -69,5 +69,5 @@ module Site =
             | EndPoint.About -> AboutPage ctx
             | EndPoint.CashFlow -> CashFlowReportPage ctx
             | EndPoint.SPA SPA.PointOfSale
-            | EndPoint.SPA (SPA.Point _) -> PointOfSale ctx
+            | EndPoint.SPA SPA.Checkout -> PointOfSale ctx
         )
