@@ -7,11 +7,13 @@ open WebSharper.UI.Client
 open WebSharper.UI.Templating
 open WebSharper.UI.Notation
 open WebSharper.UI.Html
+open WebSharper.Sitelets
+open WebSharper.UI.Server
 open WebSharper.Forms
-open WebSharper.JavaScript
 open WebSharperTest.Domain
 open WebSharper.MathJS
 open WebSharperTest.PaymentFormsDomain
+open WebSharperTest.EndPoints
 
 [<JavaScript>]
 module Templates =
@@ -162,3 +164,23 @@ module Client =
             .RegisterItems(TransactionForm())
             .RegisteredItems(RegisteredItemsForm())
             .Doc()
+            
+    let PointOfSaleMain () =
+        let router = Router.Infer<EndPoint>()
+        let location =
+            router
+            |> Router.Slice (function | SPA spa -> Some spa | _ -> None) EndPoint.SPA
+            |> Router.Install SPA.PointOfSale
+        location.View.Doc(function
+            | SPA.PointOfSale ->
+                Doc.Concat [
+                    h1 [] [text "SPA point of sale"]
+                    a [attr.href (router.Link (EndPoint.SPA (SPA.Point "POS 001")))] [text "link to POS 001"]
+                    TransactionArea ()
+                ]
+            | SPA.Point point ->
+                Doc.Concat [
+                    h1 [] [text $"SPA point {point}"]
+                    a [attr.href (router.Link (EndPoint.SPA (SPA.PointOfSale)))] [text "Back to POS"]
+                ]
+            )

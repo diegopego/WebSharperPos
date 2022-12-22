@@ -4,12 +4,7 @@ open WebSharper
 open WebSharper.Sitelets
 open WebSharper.UI
 open WebSharper.UI.Server
-
-type EndPoint =
-    | [<EndPoint "/">] Home
-    | [<EndPoint "/about">] About
-    | [<EndPoint "/point-of-sale">] PointOfSale
-    | [<EndPoint "/cash-flow">] CashFlow
+open WebSharperTest.EndPoints
 
 module Templating =
     open WebSharper.UI.Html
@@ -23,7 +18,7 @@ module Templating =
         [
             "Home" => EndPoint.Home
             "About" => EndPoint.About
-            "Point of sale" => EndPoint.PointOfSale
+            "Point of sale" => (EndPoint.SPA SPA.PointOfSale)
             "Cash Flow Report" => EndPoint.CashFlow
         ]
 
@@ -43,6 +38,8 @@ module Site =
 
     let HomePage ctx =
         Templating.Main ctx EndPoint.Home "Home" [
+            text "Here is a comon link to "
+            a [attr.href (ctx.Link (EndPoint.SPA SPA.PointOfSale)) ] [text "Point of sale SPA"]
             h1 [] [text "Say Hi to the server!"]
             div [] [client (Client.Main())]
         ]
@@ -60,8 +57,8 @@ module Site =
         ]
     
     let PointOfSale ctx =
-        Templating.Main ctx EndPoint.PointOfSale "Point of sale" [
-            client (Client.TransactionArea ())
+        Templating.Main ctx (EndPoint.SPA SPA.PointOfSale) "Point of sale" [
+            div [] [client <@ Client.PointOfSaleMain () @> ]
         ]
 
     [<Website>]
@@ -70,6 +67,7 @@ module Site =
             match endpoint with
             | EndPoint.Home -> HomePage ctx
             | EndPoint.About -> AboutPage ctx
-            | EndPoint.PointOfSale -> PointOfSale ctx
             | EndPoint.CashFlow -> CashFlowReportPage ctx
+            | EndPoint.SPA SPA.PointOfSale
+            | EndPoint.SPA (SPA.Point _) -> PointOfSale ctx
         )
