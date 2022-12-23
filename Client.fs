@@ -13,7 +13,7 @@ open WebSharper.UI.Server
 open WebSharper.Forms
 open WebSharperTest.Domain
 open WebSharper.MathJS
-open WebSharperTest.PaymentFormsDomain
+open WebSharperTest.PaymentMethodsDomain
 open WebSharperTest.EndPoints
 
 [<JavaScript>]

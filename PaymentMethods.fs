@@ -5,7 +5,7 @@ open WebSharper
 open WebSharperTest.Domain
 
 [<JavaScript>]
-module PaymentFormsDomain=
+module PaymentMethodsDomain=
     type CreditCardType =
         |Debit
         |Credit    
@@ -19,7 +19,7 @@ module PaymentFormsDomain=
         | Money of decimal<Money>
         | CreditCard of CreditCard
 module PaymentsReporting=
-    open PaymentFormsDomain
+    open PaymentMethodsDomain
     let GetPaymentsByDate date =
         [
             Money 10.0m<Money>
@@ -31,7 +31,7 @@ module PaymentsReporting=
         GetPaymentsByDate date |> List.sort
 [<JavaScript>]        
 module PaymentsTxtRenderer=
-    open PaymentFormsDomain
+    open PaymentMethodsDomain
     let renderPaymentInTxt (forma:PaymentForm) =
         match forma with
         | Money x -> $"Money Value {x}"
@@ -43,7 +43,7 @@ module PaymentsTxtRenderer=
         |> List.map renderPaymentInTxt
 [<JavaScript>]
 module PaymentsHtmlRenderer=
-    open PaymentFormsDomain
+    open PaymentMethodsDomain
     open WebSharper.UI.Html
 
     let renderPaymentInHtml (pagamento:PaymentForm)=
