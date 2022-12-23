@@ -94,7 +94,28 @@ module Client =
             |> Doc.BindView (fun items ->
                 items
                 |> List.map (fun item ->
-                    div [attr.``class`` "item"] [text item.Description]
+                    div [attr.``class`` "item"] [
+                        text $"Descrição {item.Description} Preço {item.Price}"
+                        button [
+                            on.click (fun _ _ ->
+                                itemsInCart.Update(fun items -> items |> List.filter (fun i -> i <> item))
+                            )
+                        ] [text "Remove"]
+                    ]
+                    )
+                |> Doc.Concat
+                )
+            )
+    let ItemsToCheckoutForm () =
+        CartForm ()
+        |> Form.Render (fun itemsInCart _ ->
+            itemsInCart.View
+            |> Doc.BindView (fun items ->
+                items
+                |> List.map (fun item ->
+                    div [attr.``class`` "item"] [
+                        text $"Descrição {item.Description} Preço {item.Price}"
+                    ]
                     )
                 |> Doc.Concat
                 )
@@ -185,5 +206,6 @@ module Client =
                 Doc.Concat [
                     h1 [] [text $"SPA checkout"]
                     a [attr.href (router.Link (EndPoint.SPA (SPA.PointOfSale)))] [text "Back to POS"]
+                    ItemsToCheckoutForm()
                 ]
             )
