@@ -41,17 +41,3 @@ module PaymentsTxtRenderer=
         pagamentos
         |> List.sort
         |> List.map renderPaymentInTxt
-[<JavaScript>]
-module PaymentsHtmlRenderer=
-    open PaymentMethodsDomain
-    open WebSharper.UI.Html
-
-    let renderPaymentInHtml (pagamento:PaymentMethod)=
-        match pagamento with
-        | Money x -> tr [] [ td [] [text "Money"]; td [] [ text $"{x}" ] ]
-        | CreditCard x -> tr [] [ td [] [text $"Credit Card {x.Flag}"]; td [] [ text $"{x.Value}" ] ]
-        
-    let renderCashFlowInHtml (pagamentos:PaymentMethod list) =
-        pagamentos
-        |> List.sort
-        |> List.map renderPaymentInHtml
