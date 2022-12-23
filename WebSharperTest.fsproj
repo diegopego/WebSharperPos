@@ -7,7 +7,7 @@
   <ItemGroup>
     <Compile Include="EndPoints.fs" />
     <Compile Include="Domain.fs" />
-    <Compile Include="PaymentForms.fs" />
+    <Compile Include="PaymentMethods.fs" />
     <Compile Include="Remoting.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Site.fs" />
