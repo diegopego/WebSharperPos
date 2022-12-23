@@ -176,7 +176,7 @@ module Client =
                     label [] [text "quantity: "]; Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] quantity
                     ShowErrorsFor (submit.View.Through quantity)
                 ]
-                Doc.Button "Ok" [] submit.Trigger
+                Doc.Button "Register" [] submit.Trigger
             ]
         )
     
@@ -199,12 +199,13 @@ module Client =
             | SPA.PointOfSale ->
                 Doc.Concat [
                     h1 [] [text "SPA point of sale"]
-                    a [attr.href (router.Link (EndPoint.SPA SPA.Checkout))] [text "link to POS 001"]
                     TransactionArea (location)
                 ]
             | SPA.Checkout ->
                 Doc.Concat [
                     h1 [] [text $"SPA checkout"]
+                    // link equivalent to the back button
+                    // a [attr.href (router.Link (EndPoint.SPA SPA.PointOfSale))] [text "Back"]
                     button [
                         on.click (fun _ _ ->
                             location.Set SPA.PointOfSale
