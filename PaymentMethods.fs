@@ -32,12 +32,12 @@ module PaymentsReporting=
 [<JavaScript>]        
 module PaymentsTxtRenderer=
     open PaymentMethodsDomain
-    let renderPaymentInTxt (forma:PaymentMethod) =
-        match forma with
+    let renderPaymentInTxt (method:PaymentMethod) =
+        match method with
         | Money x -> $"Money Value {x}"
         | CreditCard x -> $"Credit Card flag:{x.Flag} Value:{x.Value}"
         
-    let renderizarFluxoDeCaixaAnalíticoTxt (pagamentos:PaymentMethod list) =
-        pagamentos
+    let renderAnalyticsCashFlorReportTxt (payments:PaymentMethod list) =
+        payments
         |> List.sort
         |> List.map renderPaymentInTxt
