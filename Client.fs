@@ -2,6 +2,7 @@
 
 open System
 open WebSharper
+open WebSharper.JavaScript
 open WebSharper.UI
 open WebSharper.UI.Client
 open WebSharper.UI.Templating
@@ -189,17 +190,47 @@ module Client =
                 )
             .Doc()
             
+    let PaymentForm (routerLocation:Var<SPA>, backLocation) =
+        let paymentMethodAmountVar = Var.Create (CheckedInput.Make 0.0)
+        Form.Return (fun paymentMethodAmount -> paymentMethodAmount)
+        <*> (Form.YieldVar paymentMethodAmountVar
+            |> Validation.Is (fun x -> float x.Input > 0.0) "Quantity must be positive number"
+            |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Quantity must have up to two decimal places"
+            )
+        |> Form.WithSubmit
+        |> Form.Run (fun (paymentMethodAmount) ->
+            let paymentMethodAmountToPersist:decimal<Money> = (decimal paymentMethodAmount.Input) * 1.0m<Money>
+            let paymentForm1:PaymentForm = Money 22.0m<Money>
+            let paymentForm2:PaymentForm = CreditCard {Flag = "Mastercard"; TransactionId = ""; Value = 110m<Money>}
+            //transactionItems.Update(fun items -> List.append items [transactionItem])
+            JS.Alert($"payment done: {paymentForm1}")
+        )
+        |> Form.Render (fun paymentMethodAmount submit->
+            div [] [
+                button [
+                        on.click (fun _ _ ->
+                            routerLocation.Set backLocation
+                        )
+                    ] [text "Back"]
+                Doc.Button "End transaction" [] submit.Trigger
+                div [] [
+                    label [] [text "price: "]; Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] paymentMethodAmount
+                    ShowErrorsFor (submit.View.Through paymentMethodAmount)
+                ]
+            ]
+        )
+            
     let PointOfSaleMain () =
         let router = Router.Infer<EndPoint>()
-        let location =
+        let routerLocation =
             router
             |> Router.Slice (function | SPA spa -> Some spa | _ -> None) EndPoint.SPA
             |> Router.Install SPA.PointOfSale
-        location.View.Doc(function
+        routerLocation.View.Doc(function
             | SPA.PointOfSale ->
                 Doc.Concat [
                     h1 [] [text "SPA point of sale"]
-                    TransactionArea (location)
+                    TransactionArea (routerLocation)
                 ]
             | SPA.Checkout ->
                 Doc.Concat [
@@ -208,12 +239,12 @@ module Client =
                     // a [attr.href (router.Link (EndPoint.SPA SPA.PointOfSale))] [text "Back"]
                     button [
                         on.click (fun _ _ ->
-                            location.Set SPA.PointOfSale
+                            routerLocation.Set SPA.PointOfSale
                         )
                     ] [text "Back"]
                     button [
                         on.click (fun _ _ ->
-                            location.Set SPA.Payment
+                            routerLocation.Set SPA.Payment
                         )
                     ] [text "Proceed to Payment"]
                     ItemsToCheckoutForm()
@@ -221,16 +252,6 @@ module Client =
             | SPA.Payment ->
                 Doc.Concat [
                     h1 [] [text $"SPA payment"]
-                    button [
-                        on.click (fun _ _ ->
-                            location.Set SPA.Checkout
-                        )
-                    ] [text "Back"]
-                    button [
-                        on.click (fun _ _ ->
-                            location.Set SPA.Payment
-                        )
-                    ] [text "OK"]
-                    h1 [] [text "Formas de pagamento"]
+                    PaymentForm (routerLocation, SPA.Checkout)
                 ]
             )
