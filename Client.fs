@@ -81,11 +81,11 @@ module Client =
                     for error in errors do
                         yield b [attr.style "color:red"] [text error.Text] ] )
         |> Doc.EmbedView
-    let transactionItems: Var<List<TransactionItem>> = Var.Create List.empty
+    let transactionItemsVar: Var<List<TransactionItem>> = Var.Create List.empty
+    let transactionUidVar = Var.Create ""
     let CartForm () =
-        // Form.Return id // id function is equivalent to (fun x -> x)
-        // <*> Form.YieldVar transactionItems
-        Form.YieldVar transactionItems
+        // simplified way for a form with a single yield
+        Form.YieldVar transactionItemsVar
         |> Form.WithSubmit
         
     let RegisteredItemsForm () =
@@ -110,25 +110,37 @@ module Client =
     let ItemsToCheckoutForm () =
         CartForm ()
         |> Form.Render (fun itemsInCart _ ->
-            itemsInCart.View
-            |> Doc.BindView (fun items ->
-                items
-                |> List.map (fun item ->
-                    div [attr.``class`` "item"] [
-                        text $"Descrição {item.Description} Preço {item.Price}"
-                    ]
+            // gotcha if you pass this into render, only the last will be rendered, and no error wil be thrown. 
+            // label [] [text "first label"]
+            // label [] [text "second label"]
+            // this renders correctly:
+            // div [] [
+            //     label [] [text "first label"]
+            //     label [] [text "second label"]
+            //     ]
+            div [] [
+                div [] [
+                    label [] [text "transactionUid: "]; label [] [text transactionUidVar.Value]
+                ]
+                itemsInCart.View
+                |> Doc.BindView (fun items ->
+                    items
+                    |> List.map (fun item ->
+                        div [attr.``class`` "item"] [
+                            text $"Descrição {item.Description} Preço {item.Price}"
+                        ]
+                        )
+                    |> Doc.Concat
                     )
-                |> Doc.Concat
-                )
+            ]
             )
         
     let TransactionForm () =
-        let transactionUidVar = Var.Create (System.Guid.NewGuid().ToString())
+        transactionUidVar.Update(fun _ -> System.Guid.NewGuid().ToString())
         let priceVar = Var.Create (CheckedInput.Make 0.0)
         let quantityVar = Var.Create (CheckedInput.Make 0.0)
         // <*> compose must be in the same order of the arguments (fun user pass -> user, pass)
-        Form.Return (fun transactionUid sku description price quantity -> transactionUid, sku, description, price, quantity)
-        <*> (Form.YieldVar transactionUidVar) // transactionUid
+        Form.Return (fun sku description price quantity -> sku, description, price, quantity)
         <*> (Form.Yield "" // sku
             |> Validation.IsNotEmpty "Must enter a SKU")
         <*> (Form.Yield "" // description
@@ -143,7 +155,7 @@ module Client =
             )
         |> Form.WithSubmit // without this, the validation will run at each keystroke. add the submit button
         // ordem dos argumentos deve ser igual
-        |> Form.Run (fun (transactionUid, sku, description, price, quantity) ->
+        |> Form.Run (fun (sku, description, price, quantity) ->
             let priceToPersist:decimal<Money> = (decimal price.Input) * 1.0m<Money>
             let quantityToPersist:decimal<Quantity> = (decimal quantity.Input) * 1.0m<Quantity>
             // // ponto de esclarecimento da unidade de medida:
@@ -151,15 +163,15 @@ module Client =
             // // let total = priceToPersist * quantityToPersist
             // // ponto de esclarecimento. dentro do formulário usa um tipo intermediário, mais relaxado, e aqui colhe os benefícios do tipo do "Domínio"
             let transactionItem:TransactionItem = {Sku=sku; Description=description; Price=priceToPersist; Quantity=quantityToPersist}
-            transactionItems.Update(fun items -> List.append items [transactionItem])
+            transactionItemsVar.Update(fun items -> List.append items [transactionItem])
             //JS.Alert($"Transaction UID: {transactionUid} Item: {transactionItem.Description} Price: {transactionItem.Price}")
         )
-        |> Form.Render (fun transactionUid sku description price quantity submit ->
+        |> Form.Render (fun sku description price quantity submit ->
             // visual representation. fun user pass must be in the same order as Form.Return (fun user pass -> user, pass)
             // inside the representation, the order is meaningless.
             div [] [
                 div [] [
-                    label [] [text "transactionUid: "]; label [] [text transactionUid.Value]
+                    label [] [text "transactionUid: "]; label [] [text transactionUidVar.Value]
                 ]
                 div [] [
                     label [] [text "sku: "]; Doc.Input [] sku
@@ -221,6 +233,9 @@ module Client =
                         )
                     ] [text "Back"]
                 Doc.Button "End transaction" [] submit.Trigger
+                div [] [
+                    label [] [text "transactionUid: "]; label [] [text transactionUidVar.Value]
+                ]
                 div [] [
                     Doc.Select [] showPaymentMethod [ Money; CreditCard ]  paymentMethod
                     label [] [text "price: "]; Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] paymentMethodAmount
