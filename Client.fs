@@ -189,23 +189,31 @@ module Client =
                 routerLocation.Set SPA.Checkout
                 )
             .Doc()
-            
+    
+    type AvailablePaymentMethods =
+        | Money
+        | CreditCard
     let PaymentForm (routerLocation:Var<SPA>, backLocation) =
+        let paymentMethodVar = Var.Create Money
+        let showPaymentMethod (p:AvailablePaymentMethods) =
+            $"%A{p}"
         let paymentMethodAmountVar = Var.Create (CheckedInput.Make 0.0)
-        Form.Return (fun paymentMethodAmount -> paymentMethodAmount)
+        Form.Return (fun paymentMethod paymentMethodAmount -> paymentMethod, paymentMethodAmount)
+        <*> (Form.YieldVar paymentMethodVar)
         <*> (Form.YieldVar paymentMethodAmountVar
             |> Validation.Is (fun x -> float x.Input > 0.0) "Quantity must be positive number"
             |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Quantity must have up to two decimal places"
             )
         |> Form.WithSubmit
-        |> Form.Run (fun (paymentMethodAmount) ->
-            let paymentMethodAmountToPersist:decimal<Money> = (decimal paymentMethodAmount.Input) * 1.0m<Money>
-            let paymentForm1:PaymentForm = Money 22.0m<Money>
-            let paymentForm2:PaymentForm = CreditCard {Flag = "Mastercard"; TransactionId = ""; Value = 110m<Money>}
-            //transactionItems.Update(fun items -> List.append items [transactionItem])
-            JS.Alert($"payment done: {paymentForm1}")
+        |> Form.Run (fun (paymentMethod, paymentMethodAmount) ->
+            let amountToPersist:decimal<Money> = (decimal paymentMethodAmount.Input) * 1.0m<Money>
+            let payment =
+                match paymentMethod with
+                | Money -> PaymentForm.Money amountToPersist
+                | CreditCard -> PaymentForm.CreditCard {Flag = "Mastercard"; TransactionId = ""; Value = amountToPersist}
+            JS.Alert($"payment done: %A{payment}")
         )
-        |> Form.Render (fun paymentMethodAmount submit->
+        |> Form.Render (fun paymentMethod paymentMethodAmount submit->
             div [] [
                 button [
                         on.click (fun _ _ ->
@@ -214,6 +222,7 @@ module Client =
                     ] [text "Back"]
                 Doc.Button "End transaction" [] submit.Trigger
                 div [] [
+                    Doc.Select [] showPaymentMethod [ Money; CreditCard ]  paymentMethod
                     label [] [text "price: "]; Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] paymentMethodAmount
                     ShowErrorsFor (submit.View.Through paymentMethodAmount)
                 ]

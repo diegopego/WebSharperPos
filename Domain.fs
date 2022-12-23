@@ -3,4 +3,4 @@
 module Domain=
     [<Measure>] type Money
     [<Measure>] type Quantity
-    type Data = System.DateOnly
+    type Data = System.DateTime
