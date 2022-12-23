@@ -222,7 +222,7 @@ module Client =
             let payment =
                 match paymentMethod with
                 | Money -> PaymentForm.Money amountToPersist
-                | CreditCard -> PaymentForm.CreditCard {Flag = "Mastercard"; TransactionId = ""; Value = amountToPersist}
+                | CreditCard -> PaymentForm.CreditCard {Type = Credit; Flag = "Mastercard"; TransactionId = ""; Value = amountToPersist}
             JS.Alert($"payment done: %A{payment}")
         )
         |> Form.Render (fun paymentMethod paymentMethodAmount submit->
