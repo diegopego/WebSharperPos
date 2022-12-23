@@ -205,7 +205,31 @@ module Client =
             | SPA.Checkout ->
                 Doc.Concat [
                     h1 [] [text $"SPA checkout"]
-                    a [attr.href (router.Link (EndPoint.SPA (SPA.PointOfSale)))] [text "Back to POS"]
+                    button [
+                        on.click (fun _ _ ->
+                            location.Set SPA.PointOfSale
+                        )
+                    ] [text "Back"]
+                    button [
+                        on.click (fun _ _ ->
+                            location.Set SPA.Payment
+                        )
+                    ] [text "Proceed to Payment"]
                     ItemsToCheckoutForm()
+                ]
+            | SPA.Payment ->
+                Doc.Concat [
+                    h1 [] [text $"SPA payment"]
+                    button [
+                        on.click (fun _ _ ->
+                            location.Set SPA.Checkout
+                        )
+                    ] [text "Back"]
+                    button [
+                        on.click (fun _ _ ->
+                            location.Set SPA.Payment
+                        )
+                    ] [text "OK"]
+                    h1 [] [text "Formas de pagamento"]
                 ]
             )
