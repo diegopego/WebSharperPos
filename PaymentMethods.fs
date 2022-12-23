@@ -15,7 +15,7 @@ module PaymentMethodsDomain=
         TransactionId : string
         Value : decimal<Money>
     }
-    type PaymentForm =
+    type PaymentMethod =
         | Money of decimal<Money>
         | CreditCard of CreditCard
 module PaymentsReporting=
@@ -32,12 +32,12 @@ module PaymentsReporting=
 [<JavaScript>]        
 module PaymentsTxtRenderer=
     open PaymentMethodsDomain
-    let renderPaymentInTxt (forma:PaymentForm) =
+    let renderPaymentInTxt (forma:PaymentMethod) =
         match forma with
         | Money x -> $"Money Value {x}"
         | CreditCard x -> $"Credit Card flag:{x.Flag} Value:{x.Value}"
         
-    let renderizarFluxoDeCaixaAnalíticoTxt (pagamentos:PaymentForm list) =
+    let renderizarFluxoDeCaixaAnalíticoTxt (pagamentos:PaymentMethod list) =
         pagamentos
         |> List.sort
         |> List.map renderPaymentInTxt
@@ -46,12 +46,12 @@ module PaymentsHtmlRenderer=
     open PaymentMethodsDomain
     open WebSharper.UI.Html
 
-    let renderPaymentInHtml (pagamento:PaymentForm)=
+    let renderPaymentInHtml (pagamento:PaymentMethod)=
         match pagamento with
         | Money x -> tr [] [ td [] [text "Money"]; td [] [ text $"{x}" ] ]
         | CreditCard x -> tr [] [ td [] [text $"Credit Card {x.Flag}"]; td [] [ text $"{x.Value}" ] ]
         
-    let renderCashFlowInHtml (pagamentos:PaymentForm list) =
+    let renderCashFlowInHtml (pagamentos:PaymentMethod list) =
         pagamentos
         |> List.sort
         |> List.map renderPaymentInHtml

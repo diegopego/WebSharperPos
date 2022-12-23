@@ -43,7 +43,7 @@ module Client =
             .OnSend(fun e ->
                 async {
                     let! res = Server.GenerateCashFlowReport System.DateTime.Now
-                    let renderItem (payment:PaymentForm) = tr [] [ td [] [text (PaymentsTxtRenderer.renderPaymentInTxt payment) ] ]
+                    let renderItem (payment:PaymentMethod) = tr [] [ td [] [text (PaymentsTxtRenderer.renderPaymentInTxt payment) ] ]
                     Templates.MainTemplate.ReportTable().ReportRows(
                             List.map renderItem res |> Doc.Concat
                             ).Doc()
@@ -221,8 +221,8 @@ module Client =
             let amountToPersist:decimal<Money> = (decimal paymentMethodAmount.Input) * 1.0m<Money>
             let payment =
                 match paymentMethod with
-                | Money -> PaymentForm.Money amountToPersist
-                | CreditCard -> PaymentForm.CreditCard {Type = Credit; Flag = "Mastercard"; TransactionId = ""; Value = amountToPersist}
+                | Money -> PaymentMethod.Money amountToPersist
+                | CreditCard -> PaymentMethod.CreditCard {Type = Credit; Flag = "Mastercard"; TransactionId = ""; Value = amountToPersist}
             JS.Alert($"payment done: %A{payment}")
         )
         |> Form.Render (fun paymentMethod paymentMethodAmount submit->
