@@ -2,6 +2,7 @@
 
 open System
 open WebSharper
+open WebSharperTest.SalesTransactionDomain
 
 module Server =
 
@@ -17,3 +18,12 @@ module Server =
             return PaymentsReporting.GenerateCashFlowReport date
             // return ["Credit Card 100.00"; "Cash 50.00"]
         }
+        
+    [<Rpc>]
+    let SaleReceipt (saleUid:SaleTransactionUid)=
+        async {
+            return [
+                $"Transaction UID: {saleUid}"
+                "customer name"
+                ]
+            }

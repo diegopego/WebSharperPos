@@ -1,7 +1,10 @@
 ﻿namespace WebSharperTest
 open WebSharperTest.Domain
 open WebSharperTest.PaymentMethodsDomain
+open System
 module SalesTransactionDomain=
+    
+    type SaleTransactionUid = SaleTransactionUid of Guid
     
     type TransactionItem = {
         Sku: string
@@ -11,7 +14,7 @@ module SalesTransactionDomain=
         }
     
     type SaleTransaction = {
-        Uid: System.Guid
+        Uid: SaleTransactionUid
         Datetime: System.DateTime
         Items: TransactionItem list
         Payments: PaymentMethod list

@@ -1,5 +1,6 @@
 ﻿namespace WebSharperTest
 
+open System // the order matters. MathJS supersedes some functions.
 open WebSharper
 open WebSharper.JavaScript
 open WebSharper.UI
@@ -11,10 +12,10 @@ open WebSharper.Sitelets
 open WebSharper.UI.Server
 open WebSharper.Forms
 open WebSharperTest.Domain
-open WebSharper.MathJS
 open WebSharperTest.PaymentMethodsDomain
 open WebSharperTest.EndPoints
 open WebSharperTest.SalesTransactionDomain
+open WebSharper.MathJS
 
 [<JavaScript>]
 module Templates =
@@ -213,7 +214,7 @@ module Client =
                 match paymentMethod with
                 | Money -> PaymentMethod.Money amountToPersist
                 | CreditCard -> PaymentMethod.CreditCard {Type = Credit; Flag = "Mastercard"; TransactionId = ""; Value = amountToPersist}
-            let transaction:SaleTransaction = {Uid = System.Guid.Parse(transactionUidVar.Value); Datetime=System.DateTime.Now; Items = transactionItemsVar.Value; Payments = [payment]}
+            let transaction:SaleTransaction = {Uid = (SaleTransactionUid (Guid.Parse(transactionUidVar.Value))); Datetime=System.DateTime.Now; Items = transactionItemsVar.Value; Payments = [payment]}
             async {
                 let! res = Server.DoSomething "recibo"
                 receiptVar := res
@@ -240,16 +241,24 @@ module Client =
             ]
         )
         
-    let ReceiptForm (routerLocation:Var<SPA>, backLocation) =
+    let ReceiptForm (routerLocation:Var<SPA>) =
         div [] [
             div [] [
                 button [
                     on.click (fun _ _ ->
-                        routerLocation.Set backLocation
+                        routerLocation.Set SPA.PointOfSale
                     )
-                ] [text "Back"]
+                ] [text "New"]
             ]
-            label [] [text receiptVar.Value]
+            async {
+                let! res = Server.SaleReceipt (SaleTransactionUid (Guid.Parse(transactionUidVar.Value)))
+                let render (receipt) =
+                    tr [] [ td [] [text receipt ] ]
+                return Templates.MainTemplate.ReportTable().ReportRows(
+                    List.map render res |> Doc.Concat
+                    ).Doc()
+               }
+            |> Client.Doc.Async
         ]
             
     let PointOfSaleMain () =
@@ -289,6 +298,6 @@ module Client =
             | SPA.Receipt ->
                 Doc.Concat [
                     h1 [] [text $"SPA receipt"]
-                    ReceiptForm (routerLocation, SPA.Payment)
+                    ReceiptForm (routerLocation)
                 ]
             )
