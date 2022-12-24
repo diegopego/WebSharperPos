@@ -10,7 +10,7 @@ module SalesTransactionDomain=
         Quantity: decimal<Quantity>
         }
     
-    type Transaction = {
+    type SaleTransaction = {
         Uid: System.Guid
         Datetime: System.DateTime
         Items: TransactionItem list

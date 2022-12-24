@@ -212,7 +212,8 @@ module Client =
                 match paymentMethod with
                 | Money -> PaymentMethod.Money amountToPersist
                 | CreditCard -> PaymentMethod.CreditCard {Type = Credit; Flag = "Mastercard"; TransactionId = ""; Value = amountToPersist}
-            JS.Alert($"payment done: %A{payment}")
+            let transaction:SaleTransaction = {Uid = System.Guid.Parse(transactionUidVar.Value); Datetime=System.DateTime.Now; Items = transactionItemsVar.Value; Payments = [payment]}
+            JS.Alert($"payment done: %A{transaction}")
         )
         |> Form.Render (fun paymentMethod paymentMethodAmount submit->
             div [] [
@@ -227,7 +228,7 @@ module Client =
                 ]
                 div [] [
                     Doc.Select [] showPaymentMethod [ Money; CreditCard ]  paymentMethod
-                    label [] [text "price: "]; Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] paymentMethodAmount
+                    Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] paymentMethodAmount
                     ShowErrorsFor (submit.View.Through paymentMethodAmount)
                 ]
             ]
