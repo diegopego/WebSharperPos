@@ -194,6 +194,7 @@ module Client =
     type AvailablePaymentMethods =
         | Money
         | CreditCard
+    let receiptVar = Var.Create ""
     let PaymentForm (routerLocation:Var<SPA>, backLocation) =
         let paymentMethodVar = Var.Create Money
         let showPaymentMethod (p:AvailablePaymentMethods) =
@@ -213,7 +214,12 @@ module Client =
                 | Money -> PaymentMethod.Money amountToPersist
                 | CreditCard -> PaymentMethod.CreditCard {Type = Credit; Flag = "Mastercard"; TransactionId = ""; Value = amountToPersist}
             let transaction:SaleTransaction = {Uid = System.Guid.Parse(transactionUidVar.Value); Datetime=System.DateTime.Now; Items = transactionItemsVar.Value; Payments = [payment]}
-            JS.Alert($"payment done: %A{transaction}")
+            async {
+                let! res = Server.DoSomething "recibo"
+                receiptVar := res
+                //JS.Alert($"payment done: %A{transaction}")
+                routerLocation.Set SPA.Receipt
+            } |> Async.StartImmediate
         )
         |> Form.Render (fun paymentMethod paymentMethodAmount submit->
             div [] [
@@ -233,6 +239,18 @@ module Client =
                 ]
             ]
         )
+        
+    let ReceiptForm (routerLocation:Var<SPA>, backLocation) =
+        div [] [
+            div [] [
+                button [
+                    on.click (fun _ _ ->
+                        routerLocation.Set backLocation
+                    )
+                ] [text "Back"]
+            ]
+            label [] [text receiptVar.Value]
+        ]
             
     let PointOfSaleMain () =
         let router = Router.Infer<EndPoint>()
@@ -267,5 +285,10 @@ module Client =
                 Doc.Concat [
                     h1 [] [text $"SPA payment"]
                     PaymentForm (routerLocation, SPA.Checkout)
+                ]
+            | SPA.Receipt ->
+                Doc.Concat [
+                    h1 [] [text $"SPA receipt"]
+                    ReceiptForm (routerLocation, SPA.Payment)
                 ]
             )
