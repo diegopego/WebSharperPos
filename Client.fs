@@ -1,6 +1,5 @@
 ﻿namespace WebSharperTest
 
-open System
 open WebSharper
 open WebSharper.JavaScript
 open WebSharper.UI
@@ -15,6 +14,7 @@ open WebSharperTest.Domain
 open WebSharper.MathJS
 open WebSharperTest.PaymentMethodsDomain
 open WebSharperTest.EndPoints
+open WebSharperTest.SalesTransactionDomain
 
 [<JavaScript>]
 module Templates =
@@ -61,17 +61,6 @@ module Client =
         //             ).Doc()
         // }
         // |> Client.Doc.Async
-    type TransactionItem = {
-        Sku: string
-        Description: string
-        Price: decimal<Money>
-        Quantity: decimal<Quantity>
-        }
-    type Transaction = {
-        Uid: System.Guid
-        Datetime: DateTime
-        Items: TransactionItem list
-        }    
     let ShowErrorsFor v =
         v
         |> View.Map (function
