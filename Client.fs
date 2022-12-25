@@ -200,12 +200,16 @@ module Client =
         let paymentMethodVar = Var.Create Money
         let showPaymentMethod (p:AvailablePaymentMethods) =
             $"%A{p}"
-        let paymentMethodAmountVar = Var.Create (CheckedInput.Make 0.0)
+        let total = transactionItemsVar.Value
+                    |> List.map (fun v -> decimal v.TotaPrice) // unwrap to decimal, getting rid of unit of measure
+                    |> List.sumBy (fun v -> float v) // converto to fload, because at this time, decimal is not supported
+        let paymentMethodAmountVar = Var.Create (CheckedInput.Make total)
         Form.Return (fun paymentMethod paymentMethodAmount -> paymentMethod, paymentMethodAmount)
         <*> (Form.YieldVar paymentMethodVar)
         <*> (Form.YieldVar paymentMethodAmountVar
             |> Validation.Is (fun x -> float x.Input > 0.0) "Quantity must be positive number"
             |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Quantity must have up to two decimal places"
+            |> Validation.Is (fun x -> float x.Input >= float total) $"Quantity be greater than {total}"
             )
         |> Form.WithSubmit
         |> Form.Run (fun (paymentMethod, paymentMethodAmount) ->
@@ -231,11 +235,6 @@ module Client =
                 Doc.Button "End transaction" [] submit.Trigger
                 div [] [
                     label [] [text "transactionUid: "]; label [] [text transactionUidVar.Value]
-                    let total =
-                            transactionItemsVar.Value
-                            |> List.map (fun v -> decimal v.Price) // unwrap to decimal, getting rid of unit of measure
-                            |> List.sumBy (fun v -> float v) // converto to fload, because at this time, decimal is not supported
-                    h2 [] [text $"{total}"]
                 ]
                 div [] [
                     Doc.InputType.Select [] showPaymentMethod [ Money; CreditCard ]  paymentMethod
