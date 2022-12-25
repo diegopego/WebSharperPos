@@ -231,6 +231,11 @@ module Client =
                 Doc.Button "End transaction" [] submit.Trigger
                 div [] [
                     label [] [text "transactionUid: "]; label [] [text transactionUidVar.Value]
+                    let total =
+                            transactionItemsVar.Value
+                            |> List.map (fun v -> decimal v.Price) // unwrap to decimal, getting rid of unit of measure
+                            |> List.sumBy (fun v -> float v) // converto to fload, because at this time, decimal is not supported
+                    h2 [] [text $"{total}"]
                 ]
                 div [] [
                     Doc.InputType.Select [] showPaymentMethod [ Money; CreditCard ]  paymentMethod
