@@ -25,7 +25,13 @@ module Templates =
 
 [<JavaScript>]
 module Client =
-
+    
+    let transactionItemsVar: Var<List<TransactionItem>> = Var.Create List.empty
+    let transactionUidVar = Var.Create ""
+    let StartSaleTransaction ()=
+        transactionUidVar.Update(fun _ -> Guid.NewGuid().ToString())
+        transactionItemsVar.Update(fun _ -> List.empty)
+    
     let Main () =
         let rvReversed = Var.Create ""
         Templates.MainTemplate.MainForm()
@@ -67,8 +73,7 @@ module Client =
                     for error in errors do
                         yield b [attr.style "color:red"] [text error.Text] ] )
         |> Doc.EmbedView
-    let transactionItemsVar: Var<List<TransactionItem>> = Var.Create List.empty
-    let transactionUidVar = Var.Create ""
+    
     let CartForm () =
         // simplified way for a form with a single yield
         Form.YieldVar transactionItemsVar
@@ -122,7 +127,6 @@ module Client =
             )
         
     let TransactionForm () =
-        transactionUidVar.Update(fun _ -> System.Guid.NewGuid().ToString())
         let priceVar = Var.Create (CheckedInput.Make 0.0)
         let quantityVar = Var.Create (CheckedInput.Make 0.0)
         // <*> compose must be in the same order of the arguments (fun user pass -> user, pass)
@@ -241,6 +245,7 @@ module Client =
             div [] [
                 button [
                     on.click (fun _ _ ->
+                        StartSaleTransaction ()
                         routerLocation.Set SPA.PointOfSale
                     )
                 ] [text "New"]
@@ -258,6 +263,7 @@ module Client =
         ]
             
     let PointOfSaleMain () =
+        StartSaleTransaction ()
         let router = Router.Infer<EndPoint>()
         let routerLocation =
             router
