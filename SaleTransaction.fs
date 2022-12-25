@@ -39,6 +39,7 @@ module SalesTransactionDomain=
         Sku: string
         Description: string
         Price: decimal<Money>
+        TotaPrice: decimal<Money Quantity> // accepts (Price * Money)
         Quantity: decimal<Quantity>
         }
     
