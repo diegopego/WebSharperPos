@@ -26,8 +26,16 @@ module SalesTransactionDomain=
 
         // unwrap
         let value (SaleTransactionUid guid) = guid
+    module TransactionItemUid =
+        type T = TransactionItemUid of Guid
+
+        let create (guid:Guid) =
+            TransactionItemUid guid
+
+        let value (TransactionItemUid guid) = guid
     
     type TransactionItem = {
+        Uid: TransactionItemUid.T
         Sku: string
         Description: string
         Price: decimal<Money>

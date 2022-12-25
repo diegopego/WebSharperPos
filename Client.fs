@@ -87,7 +87,7 @@ module Client =
                 items
                 |> List.map (fun item ->
                     div [attr.``class`` "item"] [
-                        text $"Descrição {item.Description} Preço {item.Price}"
+                        text $"UID: {TransactionItemUid.value item.Uid} Descrição {item.Description} Preço {item.Price}"
                         button [
                             on.click (fun _ _ ->
                                 itemsInCart.Update(fun items -> items |> List.filter (fun i -> i <> item))
@@ -152,7 +152,7 @@ module Client =
             // // let total = priceToPersist + quantityToPersist
             // // let total = priceToPersist * quantityToPersist
             // // ponto de esclarecimento. dentro do formulário usa um tipo intermediário, mais relaxado, e aqui colhe os benefícios do tipo do "Domínio"
-            let transactionItem:TransactionItem = {Sku=sku; Description=description; Price=priceToPersist; Quantity=quantityToPersist}
+            let transactionItem:TransactionItem = {Uid=TransactionItemUid.create (Guid.NewGuid()) ; Sku=sku; Description=description; Price=priceToPersist; Quantity=quantityToPersist}
             transactionItemsVar.Update(fun items -> List.append items [transactionItem])
             //JS.Alert($"Transaction UID: {transactionUid} Item: {transactionItem.Description} Price: {transactionItem.Price}")
         )
