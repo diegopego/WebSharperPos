@@ -164,19 +164,19 @@ module Client =
                     label [] [text "transactionUid: "]; label [] [text transactionUidVar.Value]
                 ]
                 div [] [
-                    label [] [text "sku: "]; Doc.Input [] sku
+                    label [] [text "sku: "]; Doc.InputType.Text [] sku
                     ShowErrorsFor (submit.View.Through sku)
                 ]
                 div [] [
-                    label [] [text "description: "]; Doc.Input [] description
+                    label [] [text "description: "]; Doc.InputType.Text [] description
                     ShowErrorsFor (submit.View.Through description)
                 ]
                 div [] [
-                    label [] [text "price: "]; Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] price
+                    label [] [text "price: "]; Doc.InputType.Float [attr.``step`` "0.01"; attr.``min`` "0"] price
                     ShowErrorsFor (submit.View.Through price)
                 ]
                 div [] [
-                    label [] [text "quantity: "]; Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] quantity
+                    label [] [text "quantity: "]; Doc.InputType.Float [attr.``step`` "0.01"; attr.``min`` "0"] quantity
                     ShowErrorsFor (submit.View.Through quantity)
                 ]
                 Doc.Button "Register" [] submit.Trigger
@@ -233,8 +233,8 @@ module Client =
                     label [] [text "transactionUid: "]; label [] [text transactionUidVar.Value]
                 ]
                 div [] [
-                    Doc.Select [] showPaymentMethod [ Money; CreditCard ]  paymentMethod
-                    Doc.FloatInput [attr.``step`` "0.01"; attr.``min`` "0"] paymentMethodAmount
+                    Doc.InputType.Select [] showPaymentMethod [ Money; CreditCard ]  paymentMethod
+                    Doc.InputType.Float [attr.``step`` "0.01"; attr.``min`` "0"] paymentMethodAmount
                     ShowErrorsFor (submit.View.Through paymentMethodAmount)
                 ]
             ]
