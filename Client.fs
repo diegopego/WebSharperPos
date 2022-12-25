@@ -58,15 +58,6 @@ module Client =
             )
             .Doc()
         
-        // render the reults directly 
-        // async {
-        //     let! res = Server.GenerateCashFlowReport System.DateTime.Now
-        //     let renderItem (payment:PaymentForm) = tr [] [ td [] [text (PaymentsTxtRenderer.renderPaymentInTxt payment) ] ]
-        //     return Templates.MainTemplate.ReportTable().ReportRows(
-        //             List.map renderItem res |> Doc.Concat
-        //             ).Doc()
-        // }
-        // |> Client.Doc.Async
     let ShowErrorsFor v =
         v
         |> View.Map (function
