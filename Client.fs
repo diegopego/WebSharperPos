@@ -44,7 +44,12 @@ module Client =
             .OnSend(fun e ->
                 async {
                     let! res = Server.GenerateCashFlowReport System.DateTime.Now
-                    let RenderSaleTransaction (sale:SaleTransaction) = tr [] [ td [] [text $"Transaction UID: {SaleTransactionUid.value sale.Uid} Date: {sale.Datetime.ToShortDateString()} - {sale.Datetime.ToShortTimeString()} %A{sale.Payments}" ] ]
+                    let RenderSaleTransaction (sale:SaleTransaction) = tr [] [
+                        td [] [text $"{sale.Datetime.ToShortDateString()} - {sale.Datetime.ToShortTimeString()}"]
+                        td [] [text $"Transaction UID: {SaleTransactionUid.value sale.Uid}"]
+                        td [] [text $"%A{sale.Items}"]
+                        td [] [text $"%A{sale.Payments}"]
+                    ]
                     Templates.MainTemplate.ReportTable().ReportRows(
                             List.map RenderSaleTransaction res |> Doc.Concat
                             ).Doc()
