@@ -44,9 +44,9 @@ module Client =
             .OnSend(fun e ->
                 async {
                     let! res = Server.GenerateCashFlowReport System.DateTime.Now
-                    let renderItem (payment:PaymentMethod) = tr [] [ td [] [text (PaymentsTxtRenderer.renderPaymentInTxt payment) ] ]
+                    let RenderSaleTransaction (sale:SaleTransaction) = tr [] [ td [] [text $"Transaction UID: {SaleTransactionUid.value sale.Uid} Date: {sale.Datetime.ToShortDateString()} - {sale.Datetime.ToShortTimeString()} %A{sale.Payments}" ] ]
                     Templates.MainTemplate.ReportTable().ReportRows(
-                            List.map renderItem res |> Doc.Concat
+                            List.map RenderSaleTransaction res |> Doc.Concat
                             ).Doc()
                     |> Client.Doc.RunById "report-container"
                 } |> Async.StartImmediate
@@ -214,11 +214,10 @@ module Client =
                 match paymentMethod with
                 | Money -> PaymentMethod.Money amountToPersist
                 | CreditCard -> PaymentMethod.CreditCard {Type = Credit; Flag = "Mastercard"; TransactionId = ""; Value = amountToPersist}
-            let transaction:SaleTransaction = {Uid = (SaleTransactionUid (Guid.Parse(transactionUidVar.Value))); Datetime=System.DateTime.Now; Items = transactionItemsVar.Value; Payments = [payment]}
+            let transaction:SaleTransaction = {Uid = (SaleTransactionUid.create (Guid.Parse(transactionUidVar.Value))); Datetime=System.DateTime.Now; Items = transactionItemsVar.Value; Payments = [payment]}
             async {
-                let! res = Server.DoSomething "recibo"
-                receiptVar := res
-                //JS.Alert($"payment done: %A{transaction}")
+                let! res = Server.PerformSaleTransaction transaction
+                // JS.Alert($"Transaction performed: {SaleTransactionUid.value res} %A{transaction}")
                 routerLocation.Set SPA.Receipt
             } |> Async.StartImmediate
         )
@@ -251,9 +250,10 @@ module Client =
                 ] [text "New"]
             ]
             async {
-                let! res = Server.SaleReceipt (SaleTransactionUid (Guid.Parse(transactionUidVar.Value)))
-                let render (receipt) =
-                    tr [] [ td [] [text receipt ] ]
+                let currentTransactionUid = (SaleTransactionUid.create (Guid.Parse(transactionUidVar.Value)))
+                let! res = Server.SaleReceipt currentTransactionUid
+                let render line =
+                    tr [] [ td [] [text line ] ]
                 return Templates.MainTemplate.ReportTable().ReportRows(
                     List.map render res |> Doc.Concat
                     ).Doc()
