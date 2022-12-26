@@ -32,6 +32,24 @@ module Client =
         transactionUidVar.Update(fun _ -> Guid.NewGuid().ToString())
         transactionItemsVar.Update(fun _ -> List.empty)
     
+    type CreditCardFormFields = {
+        Type : CreditCardType
+        Flag : string
+        Value : CheckedInput<float>
+    }
+    let ValidateCheckedFloatPositive (f:CheckedInput<float>)=
+        match f with
+        | Valid(value, inputText) -> value > 0
+        | Invalid _ -> false
+        | Blank _ -> false
+    let ValidateCheckedFloatDecimalPlaces (f:CheckedInput<float>)=
+        match f with
+        | Valid(value, inputText) -> Math.Round(value, 2) = value
+        | Invalid _ -> false
+        | Blank _ -> false
+    let DecimalMoneyValue (x:CheckedInput<float>)=
+        (decimal x.Input) * 1.0m<Money>
+    
     let Main () =
         let rvReversed = Var.Create ""
         Templates.MainTemplate.MainForm()
@@ -191,41 +209,62 @@ module Client =
                 routerLocation.Set SPA.Checkout
                 )
             .Doc()
-    
-    type AvailablePaymentMethods =
-        | Money
-        | CreditCard
-    let receiptVar = Var.Create ""
-    let PaymentForm (routerLocation:Var<SPA>, backLocation) =
-        let paymentMethodVar = Var.Create Money
-        let showPaymentMethod (p:AvailablePaymentMethods) =
+    let CreditCardPaymentForm (init:CreditCardFormFields) =
+        Form.Return (fun cardType cardFlag (cardValue:CheckedInput<float>) -> {Type = cardType; Flag=cardFlag; Value=cardValue})
+        <*> Form.Yield init.Type
+        <*> Form.Yield init.Flag
+        <*> (Form.Yield (CheckedInput.Make(0.0))
+            |> Validation.Is ValidateCheckedFloatPositive "Card value must be positive number"
+            |> Validation.Is ValidateCheckedFloatDecimalPlaces "Card value must have up to two decimal places"
+            )
+        
+    let RenderCreditCardPaymentForm cardType cardFlag cardValue=
+        let renderCardType (p:CreditCardType) =
             $"%A{p}"
+        Doc.Concat [
+            label [] [text "Pay with Credit Card: "]
+            Doc.InputType.Select [] renderCardType [ Debit; Credit ] cardType
+            label [] [text "Card Flag: "]; Doc.InputType.Text [] cardFlag
+            label [] [text "Value: "]; Doc.InputType.Float [attr.``step`` "0.01"; attr.``min`` "0"] cardValue
+    ]
+    
+    let receiptVar = Var.Create ""
+    let PaymentForm (routerLocation:Var<SPA>, backLocation, creditCards:seq<CreditCardFormFields>) =
         let total = transactionItemsVar.Value
                     |> List.map (fun v -> decimal v.TotaPrice) // unwrap to decimal, getting rid of unit of measure
                     |> List.sumBy (fun v -> float v) // converto to fload, because at this time, decimal is not supported
-        let paymentMethodAmountVar = Var.Create (CheckedInput.Make total)
-        Form.Return (fun paymentMethod paymentMethodAmount -> paymentMethod, paymentMethodAmount)
-        <*> (Form.YieldVar paymentMethodVar)
-        <*> (Form.YieldVar paymentMethodAmountVar
-            |> Validation.Is (fun x -> float x.Input > 0.0) "Quantity must be positive number"
-            |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Quantity must have up to two decimal places"
-            |> Validation.Is (fun x -> float x.Input >= float total) $"Quantity be greater than {total}"
+        let moneyAmountVar = Var.Create (CheckedInput.Make total)
+        Form.Return (fun moneyAmount creditCards -> moneyAmount, creditCards)
+        <*> (Form.YieldVar moneyAmountVar
+            |> Validation.Is (fun x -> float x.Input > 0.0) "Money must be positive number"
+            |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Money must have up to two decimal places"
+            |> Validation.Is (fun x -> float x.Input >= float total) $"Money be greater than {total}"
             )
+        <*> Form.Many creditCards { Type=Debit; Flag="Visa"; Value=CheckedInput.Make(0.0) } CreditCardPaymentForm
         |> Form.WithSubmit
-        |> Form.Run (fun (paymentMethod, paymentMethodAmount) ->
-            let amountToPersist:decimal<Money> = (decimal paymentMethodAmount.Input) * 1.0m<Money>
-            let payment =
-                match paymentMethod with
-                | Money -> PaymentMethod.Money amountToPersist
-                | CreditCard -> PaymentMethod.CreditCard {Type = Credit; Flag = "Mastercard"; TransactionId = ""; Value = amountToPersist}
-            let transaction:SaleTransaction = {Uid = (SaleTransactionUid.create (Guid.Parse(transactionUidVar.Value))); Datetime=System.DateTime.Now; Items = transactionItemsVar.Value; Payments = [payment]}
+        |> Form.Run (fun (moneyAmount, creditCards) ->
+            let moneyPayment:list<PaymentMethod> =
+                if (DecimalMoneyValue moneyAmount) > 0m<Money> then
+                    [PaymentMethod.Money (DecimalMoneyValue moneyAmount)]
+                else
+                    []
+            let creditCardPayments =
+                creditCards
+                |> Seq.toList
+                |> List.map (fun x -> PaymentMethod.CreditCard {Type = x.Type; Flag = x.Flag; TransactionId = Guid.NewGuid().ToString(); Value = DecimalMoneyValue x.Value})
+            let payments =
+                List.concat [
+                    moneyPayment
+                    creditCardPayments
+                ] |> Seq.toList
+            let transaction:SaleTransaction = {Uid = (SaleTransactionUid.create (Guid.Parse(transactionUidVar.Value))); Datetime=System.DateTime.Now; Items = transactionItemsVar.Value; Payments = payments}
             async {
                 let! res = Server.PerformSaleTransaction transaction
                 // JS.Alert($"Transaction performed: {SaleTransactionUid.value res} %A{transaction}")
                 routerLocation.Set SPA.Receipt
             } |> Async.StartImmediate
         )
-        |> Form.Render (fun paymentMethod paymentMethodAmount submit->
+        |> Form.Render (fun paymentMethodAmount creditCards submit->
             div [] [
                 button [
                         on.click (fun _ _ ->
@@ -237,9 +276,19 @@ module Client =
                     label [] [text "transactionUid: "]; label [] [text transactionUidVar.Value]
                 ]
                 div [] [
-                    Doc.InputType.Select [] showPaymentMethod [ Money; CreditCard ]  paymentMethod
+                    label [] [text "Money"]
                     Doc.InputType.Float [attr.``step`` "0.01"; attr.``min`` "0"] paymentMethodAmount
                     ShowErrorsFor (submit.View.Through paymentMethodAmount)
+                ]
+                div [] [
+                    creditCards.Render (fun ops cardType cardFlag cardValue ->
+                        div [] [
+                            RenderCreditCardPaymentForm cardType cardFlag cardValue
+                            Doc.Button "Delete" [] ops.Delete
+                            ShowErrorsFor (submit.View.Through cardValue)
+                        ]
+                        )
+                    Doc.Button "Add Payment Form" [] creditCards.Add
                 ]
             ]
         )
@@ -299,7 +348,7 @@ module Client =
             | SPA.Payment ->
                 Doc.Concat [
                     h1 [] [text $"SPA payment"]
-                    PaymentForm (routerLocation, SPA.Checkout)
+                    PaymentForm (routerLocation, SPA.Checkout, [|{ Type=Debit; Flag= "MasterCard"; Value= CheckedInput.Make(0.0) }|])
                 ]
             | SPA.Receipt ->
                 Doc.Concat [
