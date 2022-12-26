@@ -27,6 +27,10 @@ module Templates =
 module Client =
     
     let transactionItemsVar: Var<List<TransactionItem>> = Var.Create List.empty
+    // Thre transaction uid is shared among the different forms using two techniques: a reactive var, and endpoint argument
+    // The endpoint argument allows to share the form link and restore the state from it. e.g.:
+    // https://localhost:5001/spa/point-of-sale/receipt/5735514d-d544-4890-bd74-b763d025160e
+    // You may use both simultaneously. 
     let transactionUidVar = Var.Create ""
     let StartSaleTransaction ()=
         transactionUidVar.Update(fun _ -> Guid.NewGuid().ToString())
@@ -255,7 +259,7 @@ module Client =
             async {
                 let! res = Server.PerformSaleTransaction transaction
                 // JS.Alert($"Transaction performed: {SaleTransactionUid.value res} %A{transaction}")
-                routerLocation.Set SPA.Receipt
+                routerLocation.Set (SPA.Receipt transactionUidVar.Value)
             } |> Async.StartImmediate
         )
         |> Form.Render (fun paymentMethodAmount creditCards submit->
@@ -287,7 +291,7 @@ module Client =
             ]
         )
         
-    let ReceiptForm (routerLocation:Var<SPA>) =
+    let ReceiptForm (uid:string, routerLocation:Var<SPA>) =
         div [] [
             div [] [
                 button [
@@ -298,7 +302,7 @@ module Client =
                 ] [text "New"]
             ]
             async {
-                let currentTransactionUid = (SaleTransactionUid.create (Guid.Parse(transactionUidVar.Value)))
+                let currentTransactionUid = (SaleTransactionUid.create (Guid.Parse(uid)))
                 let! res = Server.SaleReceipt currentTransactionUid
                 let render line =
                     tr [] [ td [] [text line ] ]
@@ -344,10 +348,10 @@ module Client =
                     h1 [] [text $"SPA payment"]
                     PaymentForm (routerLocation, SPA.Checkout, [|{ Type=Debit; Flag= "MasterCard"; Value= CheckedInput.Make(0.0) }|])
                 ]
-            | SPA.Receipt ->
+            | SPA.Receipt uid ->
                 Doc.Concat [
                     h1 [] [text $"SPA receipt"]
-                    ReceiptForm (routerLocation)
+                    ReceiptForm (uid, routerLocation)
                 ]
             )
         
