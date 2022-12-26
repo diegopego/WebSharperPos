@@ -2,10 +2,10 @@
 open WebSharper
 open WebSharperTest.Domain
 open WebSharperTest.PaymentMethodsDomain
-open WebSharperTest.PaymentsTxtRenderer
+open WebSharperTest.PaymentsRender
 open System
 [<JavaScript>]
-module SalesTransactionDomain=
+module SaleTransactionDomain=
     
     // this is a case of wrapping and wrapping single case unions
     // this code would be as simple as
@@ -39,7 +39,7 @@ module SalesTransactionDomain=
         Sku: string
         Description: string
         Price: decimal<Money>
-        TotaPrice: decimal<Money Quantity> // accepts (Price * Money)
+        TotaPrice: decimal<Money Quantity> // Unit of Measure that accepts (<Price> times <Money>)
         Quantity: decimal<Quantity>
         }
     
@@ -49,14 +49,17 @@ module SalesTransactionDomain=
         Items: TransactionItem list
         Payments: PaymentMethod list
         }
-    
+
+[<JavaScript>]        
+module SaleTransactionRender=
+    open SaleTransactionDomain
     let RenderSaleTransactionReceiptTxt sale = List.concat [
         [
             $"Transaction UID: {sale.Uid}"
             $"Date: {sale.Datetime}"
         ]
         sale.Items |> List.map (fun item -> $"%A{item}")
-        sale.Payments |> List.map renderPaymentInTxt
+        sale.Payments |> List.map RenderPaymentTxt
         [
             $"sale object used to render this receipt:"
             $"%A{sale}"

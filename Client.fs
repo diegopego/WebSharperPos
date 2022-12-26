@@ -14,7 +14,7 @@ open WebSharper.Forms
 open WebSharperTest.Domain
 open WebSharperTest.PaymentMethodsDomain
 open WebSharperTest.EndPoints
-open WebSharperTest.SalesTransactionDomain
+open WebSharperTest.SaleTransactionDomain
 open WebSharper.MathJS
 
 [<JavaScript>]
@@ -49,6 +49,17 @@ module Client =
         | Blank _ -> false
     let DecimalMoneyValue (x:CheckedInput<float>)=
         (decimal x.Input) * 1.0m<Money>
+    let DecimalQuantityValue (x:CheckedInput<float>)=
+        (decimal x.Input) * 1.0m<Quantity>   
+    let ShowErrorsFor v =
+        v
+        |> View.Map (function
+            | Success _ -> Doc.Empty
+            | Failure errors ->
+                Doc.Concat [
+                    for error in errors do
+                        yield b [attr.style "color:red"] [text error.Text] ] )
+        |> Doc.EmbedView
     
     let Main () =
         let rvReversed = Var.Create ""
@@ -81,19 +92,10 @@ module Client =
                 } |> Async.StartImmediate
             )
             .Doc()
-        
-    let ShowErrorsFor v =
-        v
-        |> View.Map (function
-            | Success _ -> Doc.Empty
-            | Failure errors ->
-                Doc.Concat [
-                    for error in errors do
-                        yield b [attr.style "color:red"] [text error.Text] ] )
-        |> Doc.EmbedView
-    
+
     let CartForm () =
         // simplified way for a form with a single yield
+        // Use YieldVar when using a shared reactive Var.
         Form.YieldVar transactionItemsVar
         |> Form.WithSubmit
         
@@ -145,38 +147,32 @@ module Client =
             )
         
     let TransactionForm () =
-        let priceVar = Var.Create (CheckedInput.Make 0.0)
-        let quantityVar = Var.Create (CheckedInput.Make 0.0)
-        // <*> compose must be in the same order of the arguments (fun user pass -> user, pass)
         Form.Return (fun sku description price quantity -> sku, description, price, quantity)
+        // Compose the fields by using the <*> function. Make sure to compose them in the same order as Form.Return arguments
         <*> (Form.Yield "" // sku
             |> Validation.IsNotEmpty "Must enter a SKU")
         <*> (Form.Yield "" // description
             |> Validation.IsNotEmpty "Must enter a description")
-        <*> (Form.YieldVar priceVar
+        <*> (Form.Yield (CheckedInput.Make 0.0)
             |> Validation.Is (fun x -> float x.Input > 0.0) "Price must be positive number"
             |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Price must have up to two decimal places"
             )
-        <*> (Form.YieldVar quantityVar
+        <*> (Form.Yield (CheckedInput.Make 0.0)
             |> Validation.Is (fun x -> float x.Input > 0.0) "Quantity must be positive number"
             |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Quantity must have up to two decimal places"
             )
         |> Form.WithSubmit // without this, the validation will run at each keystroke. add the submit button
-        // ordem dos argumentos deve ser igual
         |> Form.Run (fun (sku, description, price, quantity) ->
-            let priceToPersist:decimal<Money> = (decimal price.Input) * 1.0m<Money>
-            let quantityToPersist:decimal<Quantity> = (decimal quantity.Input) * 1.0m<Quantity>
-            // // ponto de esclarecimento da unidade de medida:
-            // // let total = priceToPersist + quantityToPersist
-            // // let total = priceToPersist * quantityToPersist
-            // // ponto de esclarecimento. dentro do formulário usa um tipo intermediário, mais relaxado, e aqui colhe os benefícios do tipo do "Domínio"
-            let transactionItem:TransactionItem = {Uid=TransactionItemUid.create (Guid.NewGuid()) ; Sku=sku; Description=description; Price=priceToPersist; TotaPrice=(priceToPersist * quantityToPersist); Quantity=quantityToPersist}
+            // Form.Run arguments must be in the same order as Form.Return
+            // At the time this was written, there is no support decimal input.
+            // Here is the place to convert CheckedInput<float> to the type needed by the RPC (Remote Procedure Call)
+            let transactionItem:TransactionItem = {Uid=TransactionItemUid.create (Guid.NewGuid()) ; Sku=sku; Description=description; Price=DecimalMoneyValue price; TotaPrice=((DecimalMoneyValue price) * (DecimalQuantityValue quantity)); Quantity=(DecimalQuantityValue quantity)}
             transactionItemsVar.Update(fun items -> List.append items [transactionItem])
             //JS.Alert($"Transaction UID: {transactionUid} Item: {transactionItem.Description} Price: {transactionItem.Price}")
         )
         |> Form.Render (fun sku description price quantity submit ->
-            // visual representation. fun user pass must be in the same order as Form.Return (fun user pass -> user, pass)
-            // inside the representation, the order is meaningless.
+            // Form.Render arguments musb be in the same order as Form.Return
+            // The submit argument is passed by the Form.WithSubmit
             div [] [
                 div [] [
                     label [] [text "transactionUid: "]; label [] [text transactionUidVar.Value]
@@ -213,32 +209,36 @@ module Client =
         Form.Return (fun cardType cardFlag (cardValue:CheckedInput<float>) -> {Type = cardType; Flag=cardFlag; Value=cardValue})
         <*> Form.Yield init.Type
         <*> Form.Yield init.Flag
-        <*> (Form.Yield (CheckedInput.Make(0.0))
+        <*> (Form.Yield (CheckedInput.Make 0.0)
             |> Validation.Is ValidateCheckedFloatPositive "Card value must be positive number"
             |> Validation.Is ValidateCheckedFloatDecimalPlaces "Card value must have up to two decimal places"
             )
         
     let RenderCreditCardPaymentForm cardType cardFlag cardValue=
-        let renderCardType (p:CreditCardType) =
+        let RenderCardType (p:CreditCardType) =
             $"%A{p}"
         Doc.Concat [
             label [] [text "Pay with Credit Card: "]
-            Doc.InputType.Select [] renderCardType [ Debit; Credit ] cardType
+            Doc.InputType.Select [] RenderCardType [ Debit; Credit ] cardType
             label [] [text "Card Flag: "]; Doc.InputType.Text [] cardFlag
             label [] [text "Value: "]; Doc.InputType.Float [attr.``step`` "0.01"; attr.``min`` "0"] cardValue
     ]
     
     let receiptVar = Var.Create ""
     let PaymentForm (routerLocation:Var<SPA>, backLocation, creditCards:seq<CreditCardFormFields>) =
+        let PriceToFloat (p:decimal<Money Quantity>) =
+            // unwrap to decimal, getting rid of unit of measure, then convert to float. because at this time, decimal is not supported by WebSharper.Forms
+            p |> decimal |> float
+            
         let total = transactionItemsVar.Value
-                    |> List.map (fun v -> decimal v.TotaPrice) // unwrap to decimal, getting rid of unit of measure
-                    |> List.sumBy (fun v -> float v) // converto to fload, because at this time, decimal is not supported
-        let moneyAmountVar = Var.Create (CheckedInput.Make total)
+                    |> List.map (fun v -> PriceToFloat v.TotaPrice ) // convert List<TransactionItem> to List<float>
+                    |> List.sumBy id // id is shorthand to (fun v -> v)
+        
         Form.Return (fun moneyAmount creditCards -> moneyAmount, creditCards)
-        <*> (Form.YieldVar moneyAmountVar
+        <*> (Form.Yield (CheckedInput.Make total)
             |> Validation.Is (fun x -> float x.Input > 0.0) "Money must be positive number"
             |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Money must have up to two decimal places"
-            |> Validation.Is (fun x -> float x.Input >= float total) $"Money be greater than {total}"
+            |> Validation.Is (fun x -> float x.Input >= total) $"Money be greater than {total}"
             )
         <*> Form.Many creditCards { Type=Debit; Flag="Visa"; Value=CheckedInput.Make(0.0) } CreditCardPaymentForm
         |> Form.WithSubmit

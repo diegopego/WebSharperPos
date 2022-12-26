@@ -19,14 +19,9 @@ module PaymentMethodsDomain=
         | Money of decimal<Money>
         | CreditCard of CreditCard
 [<JavaScript>]        
-module PaymentsTxtRenderer=
+module PaymentsRender=
     open PaymentMethodsDomain
-    let renderPaymentInTxt (method:PaymentMethod) =
+    let RenderPaymentTxt (method:PaymentMethod) =
         match method with
         | Money x -> $"Money Value {x}"
         | CreditCard x -> $"Credit Card flag:{x.Flag} Value:{x.Value}"
-        
-    let renderAnalyticsCashFlorReportTxt (payments:PaymentMethod list) =
-        payments
-        |> List.sort
-        |> List.map renderPaymentInTxt

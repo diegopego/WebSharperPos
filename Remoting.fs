@@ -4,7 +4,8 @@ open System
 open System.Collections.Generic
 open WebSharper
 open WebSharperTest.Domain
-open WebSharperTest.SalesTransactionDomain
+open WebSharperTest.SaleTransactionDomain
+open WebSharperTest.SaleTransactionRender
 
 module Server =
     // use a Dictionary to fake a database
