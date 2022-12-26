@@ -37,26 +37,31 @@ module Client =
         Flag : string
         Value : CheckedInput<float>
     }
+    
     let ValidateCheckedFloatPositive (f:CheckedInput<float>)=
         match f with
         | Valid(value, inputText) -> value > 0
         | Invalid _ -> false
         | Blank _ -> false
+    
     let ValidateCheckedFloatDecimalPlaces places (f:CheckedInput<float>) =
         match f with
         | Valid(value, inputText) -> Math.Round(value, places) = value
         | Invalid _ -> false
         | Blank _ -> false
+    
     let MoneyFromCheckedInput (x:CheckedInput<float>)=
         match x with
         | Valid(value, inputText) -> decimal value * 1.0m<Money>
         | Invalid _ -> 0m<Money>
         | Blank _ -> 0m<Money>
+    
     let QuantityFromCheckedInput (x:CheckedInput<float>)=
         match x with
         | Valid(value, inputText) -> decimal value * 1.0m<Quantity>
         | Invalid _ -> 0m<Quantity>
         | Blank _ -> 0m<Quantity>
+    
     let ShowErrorsFor v =
         v
         |> View.Map (function
@@ -78,25 +83,6 @@ module Client =
                 |> Async.StartImmediate
             )
             .Reversed(rvReversed.View)
-            .Doc()
-
-    let RetrieveCashFlowReport () =
-        Templates.MainTemplate.ReportForm()
-            .OnSend(fun e ->
-                async {
-                    let! res = Server.GenerateCashFlowReport System.DateTime.Now
-                    let RenderSaleTransaction (sale:SaleTransaction) = tr [] [
-                        td [] [text $"{sale.Datetime.ToShortDateString()} - {sale.Datetime.ToShortTimeString()}"]
-                        td [] [text $"Transaction UID: {SaleTransactionUid.value sale.Uid}"]
-                        td [] [text $"%A{sale.Items}"]
-                        td [] [text $"%A{sale.Payments}"]
-                    ]
-                    Templates.MainTemplate.ReportTable().ReportRows(
-                            List.map RenderSaleTransaction res |> Doc.Concat
-                            ).Doc()
-                    |> Client.Doc.RunById "report-container"
-                } |> Async.StartImmediate
-            )
             .Doc()
 
     let CartForm () =
@@ -124,6 +110,7 @@ module Client =
                 |> Doc.Concat
                 )
             )
+
     let ItemsToCheckoutForm () =
         CartForm ()
         |> Form.Render (fun itemsInCart _ ->
@@ -211,6 +198,7 @@ module Client =
                 routerLocation.Set SPA.Checkout
                 )
             .Doc()
+
     let CreditCardPaymentForm (init:CreditCardFormFields) =
         Form.Return (fun cardType cardFlag (cardValue:CheckedInput<float>) -> {Type = cardType; Flag=cardFlag; Value=cardValue})
         <*> Form.Yield init.Type
@@ -362,3 +350,22 @@ module Client =
                     ReceiptForm (routerLocation)
                 ]
             )
+        
+    let RetrieveCashFlowReport () =
+        Templates.MainTemplate.ReportForm()
+            .OnSend(fun e ->
+                async {
+                    let! res = Server.GenerateCashFlowReport System.DateTime.Now
+                    let RenderSaleTransaction (sale:SaleTransaction) = tr [] [
+                        td [] [text $"{sale.Datetime.ToShortDateString()} - {sale.Datetime.ToShortTimeString()}"]
+                        td [] [text $"Transaction UID: {SaleTransactionUid.value sale.Uid}"]
+                        td [] [text $"%A{sale.Items}"]
+                        td [] [text $"%A{sale.Payments}"]
+                    ]
+                    Templates.MainTemplate.ReportTable().ReportRows(
+                            List.map RenderSaleTransaction res |> Doc.Concat
+                            ).Doc()
+                    |> Client.Doc.RunById "report-container"
+                } |> Async.StartImmediate
+            )
+            .Doc()
