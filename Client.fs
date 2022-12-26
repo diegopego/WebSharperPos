@@ -31,11 +31,27 @@ module Client =
     // The endpoint argument allows to share the form link and restore the state from it. e.g.:
     // https://localhost:5001/spa/point-of-sale/receipt/5735514d-d544-4890-bd74-b763d025160e
     // You may use both simultaneously. 
+    let amountDueVar = Var.Create 0.0
+    let amountDueVarTxt = Var.Create ""
+    
+    let UpdateAmountDueVar () =
+        let PriceToFloat (p:decimal<Money Quantity>) =
+            // unwrap to decimal, getting rid of unit of measure, then convert to float. because at this time, decimal is not supported by WebSharper.Forms
+            p |> decimal |> float
+        
+        let total = transactionItemsVar.Value
+                    |> List.map (fun v -> PriceToFloat v.TotaPrice ) // convert List<TransactionItem> to List<float>
+                    |> List.sumBy id // id is shorthand to (fun v -> v)
+        
+        amountDueVar.Value <- total
+        amountDueVarTxt.Value <- $"{total}"
+        
     let transactionUidVar = Var.Create ""
     let StartSaleTransaction ()=
         transactionUidVar.Update(fun _ -> Guid.NewGuid().ToString())
         transactionItemsVar.Update(fun _ -> List.empty)
-    
+        UpdateAmountDueVar ()
+        
     type CreditCardFormFields = {
         Type : CreditCardType
         Flag : string
@@ -103,26 +119,37 @@ module Client =
         // Use YieldVar when using a shared reactive Var.
         Form.YieldVar transactionItemsVar
         |> Form.WithSubmit
-        
+    
     let RegisteredItemsForm () =
-        CartForm ()
-        |> Form.Render (fun itemsInCart _ ->
-            itemsInCart.View
-            |> Doc.BindView (fun items ->
-                items
-                |> List.map (fun item ->
-                    div [attr.``class`` "item"] [
-                        text $"UID: {GuidHead (TransactionItemUid.value item.Uid)} Product {item.Description} Price {item.Price} Quantity {item.Quantity} TotalPrice {item.TotaPrice}"
-                        button [
-                            on.click (fun _ _ ->
-                                itemsInCart.Update(fun items -> items |> List.filter (fun i -> i <> item))
-                            )
-                        ] [text "Remove"]
-                    ]
+        let AmountDueRv =
+            amountDueVarTxt.View
+            |> View.Map (fun x -> $"Amount due is {x}")
+        
+        div [] [
+            div [] [
+                // You could use textView amountDueVarTxt.View, but amountDueRv shows you how to manipulate the View
+                textView AmountDueRv
+            ]
+            CartForm ()
+            |> Form.Render (fun itemsInCart _ ->
+                itemsInCart.View
+                |> Doc.BindView (fun items ->
+                    items
+                    |> List.map (fun item ->
+                        div [attr.``class`` "item"] [
+                            text $"UID: {GuidHead (TransactionItemUid.value item.Uid)} Product {item.Description} Price {item.Price} Quantity {item.Quantity} TotalPrice {item.TotaPrice}"
+                            button [
+                                on.click (fun _ _ ->
+                                    itemsInCart.Update(fun items -> items |> List.filter (fun i -> i <> item))
+                                    UpdateAmountDueVar ()
+                                )
+                            ] [text "Remove"]
+                        ]
+                        )
+                    |> Doc.Concat
                     )
-                |> Doc.Concat
                 )
-            )
+            ]
 
     let ItemsToCheckoutForm () =
         CartForm ()
@@ -174,6 +201,7 @@ module Client =
             // Here is the place to convert CheckedInput<float> to the type needed by the RPC (Remote Procedure Call)
             let transactionItem:TransactionItem = {Uid=TransactionItemUid.create (Guid.NewGuid()) ; Sku=sku; Description=description; Price=MoneyFromCheckedInput price; TotaPrice=((MoneyFromCheckedInput price) * (QuantityFromCheckedInput quantity)); Quantity=(QuantityFromCheckedInput quantity)}
             transactionItemsVar.Update(fun items -> List.append items [transactionItem])
+            UpdateAmountDueVar ()
             //JS.Alert($"Transaction UID: {transactionUid} Item: {transactionItem.Description} Price: {transactionItem.Price}")
         )
         |> Form.Render (fun sku description price quantity submit ->
@@ -232,18 +260,10 @@ module Client =
     ]
     
     let receiptVar = Var.Create ""
+    
     let PaymentForm (routerLocation:Var<SPA>, backLocation, creditCards:seq<CreditCardFormFields>) =
-        let PriceToFloat (p:decimal<Money Quantity>) =
-            // unwrap to decimal, getting rid of unit of measure, then convert to float. because at this time, decimal is not supported by WebSharper.Forms
-            p |> decimal |> float
-            
-        let CalculateAmountDue =
-            transactionItemsVar.Value
-            |> List.map (fun v -> PriceToFloat v.TotaPrice ) // convert List<TransactionItem> to List<float>
-            |> List.sumBy id // id is shorthand to (fun v -> v)
-        
         Form.Return (fun moneyAmount creditCards -> moneyAmount, creditCards)
-        <*> (Form.Yield (CheckedInput.Make CalculateAmountDue)
+        <*> (Form.Yield (CheckedInput.Make amountDueVar.Value)
             |> Validation.Is (ValidateCheckedFloatPositive) "Money must be positive number"
             |> Validation.Is (ValidateCheckedFloatDecimalPlaces 2) "Money must have up to two decimal places"
             )
