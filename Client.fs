@@ -42,15 +42,21 @@ module Client =
         | Valid(value, inputText) -> value > 0
         | Invalid _ -> false
         | Blank _ -> false
-    let ValidateCheckedFloatDecimalPlaces (f:CheckedInput<float>)=
+    let ValidateCheckedFloatDecimalPlaces places (f:CheckedInput<float>) =
         match f with
-        | Valid(value, inputText) -> Math.Round(value, 2) = value
+        | Valid(value, inputText) -> Math.Round(value, places) = value
         | Invalid _ -> false
         | Blank _ -> false
-    let DecimalMoneyValue (x:CheckedInput<float>)=
-        (decimal x.Input) * 1.0m<Money>
-    let DecimalQuantityValue (x:CheckedInput<float>)=
-        (decimal x.Input) * 1.0m<Quantity>   
+    let MoneyFromCheckedInput (x:CheckedInput<float>)=
+        match x with
+        | Valid(value, inputText) -> decimal value * 1.0m<Money>
+        | Invalid _ -> 0m<Money>
+        | Blank _ -> 0m<Money>
+    let QuantityFromCheckedInput (x:CheckedInput<float>)=
+        match x with
+        | Valid(value, inputText) -> decimal value * 1.0m<Quantity>
+        | Invalid _ -> 0m<Quantity>
+        | Blank _ -> 0m<Quantity>
     let ShowErrorsFor v =
         v
         |> View.Map (function
@@ -154,19 +160,19 @@ module Client =
         <*> (Form.Yield "" // description
             |> Validation.IsNotEmpty "Must enter a description")
         <*> (Form.Yield (CheckedInput.Make 0.0)
-            |> Validation.Is (fun x -> float x.Input > 0.0) "Price must be positive number"
-            |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Price must have up to two decimal places"
+            |> Validation.Is (fun x -> ValidateCheckedFloatPositive x) "Price must be positive number" // This could be simplified to |> Validation.Is ValidateCheckedFloatPositive "Quantity must be positive number"
+            |> Validation.Is (fun x -> ValidateCheckedFloatDecimalPlaces 2 x) "Price must have up to two decimal places" // This could be simplified to |> Validation.Is (ValidateCheckedFloatDecimalPlaces 2) "Quantity must have up to two decimal places"
             )
         <*> (Form.Yield (CheckedInput.Make 0.0)
-            |> Validation.Is (fun x -> float x.Input > 0.0) "Quantity must be positive number"
-            |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Quantity must have up to two decimal places"
+            |> Validation.Is ValidateCheckedFloatPositive "Quantity must be positive number"
+            |> Validation.Is (ValidateCheckedFloatDecimalPlaces 2) "Quantity must have up to two decimal places"
             )
         |> Form.WithSubmit // without this, the validation will run at each keystroke. add the submit button
         |> Form.Run (fun (sku, description, price, quantity) ->
             // Form.Run arguments must be in the same order as Form.Return
             // At the time this was written, there is no support decimal input.
             // Here is the place to convert CheckedInput<float> to the type needed by the RPC (Remote Procedure Call)
-            let transactionItem:TransactionItem = {Uid=TransactionItemUid.create (Guid.NewGuid()) ; Sku=sku; Description=description; Price=DecimalMoneyValue price; TotaPrice=((DecimalMoneyValue price) * (DecimalQuantityValue quantity)); Quantity=(DecimalQuantityValue quantity)}
+            let transactionItem:TransactionItem = {Uid=TransactionItemUid.create (Guid.NewGuid()) ; Sku=sku; Description=description; Price=MoneyFromCheckedInput price; TotaPrice=((MoneyFromCheckedInput price) * (QuantityFromCheckedInput quantity)); Quantity=(QuantityFromCheckedInput quantity)}
             transactionItemsVar.Update(fun items -> List.append items [transactionItem])
             //JS.Alert($"Transaction UID: {transactionUid} Item: {transactionItem.Description} Price: {transactionItem.Price}")
         )
@@ -211,7 +217,7 @@ module Client =
         <*> Form.Yield init.Flag
         <*> (Form.Yield (CheckedInput.Make 0.0)
             |> Validation.Is ValidateCheckedFloatPositive "Card value must be positive number"
-            |> Validation.Is ValidateCheckedFloatDecimalPlaces "Card value must have up to two decimal places"
+            |> Validation.Is (ValidateCheckedFloatDecimalPlaces 2) "Card value must have up to two decimal places"
             )
         
     let RenderCreditCardPaymentForm cardType cardFlag cardValue=
@@ -230,28 +236,28 @@ module Client =
             // unwrap to decimal, getting rid of unit of measure, then convert to float. because at this time, decimal is not supported by WebSharper.Forms
             p |> decimal |> float
             
-        let total = transactionItemsVar.Value
-                    |> List.map (fun v -> PriceToFloat v.TotaPrice ) // convert List<TransactionItem> to List<float>
-                    |> List.sumBy id // id is shorthand to (fun v -> v)
+        let CalculateAmountDue =
+            transactionItemsVar.Value
+            |> List.map (fun v -> PriceToFloat v.TotaPrice ) // convert List<TransactionItem> to List<float>
+            |> List.sumBy id // id is shorthand to (fun v -> v)
         
         Form.Return (fun moneyAmount creditCards -> moneyAmount, creditCards)
-        <*> (Form.Yield (CheckedInput.Make total)
-            |> Validation.Is (fun x -> float x.Input > 0.0) "Money must be positive number"
-            |> Validation.Is (fun x -> Math.Round(float x.Input, 2) = float x.Input) "Money must have up to two decimal places"
-            |> Validation.Is (fun x -> float x.Input >= total) $"Money be greater than {total}"
+        <*> (Form.Yield (CheckedInput.Make CalculateAmountDue)
+            |> Validation.Is (ValidateCheckedFloatPositive) "Money must be positive number"
+            |> Validation.Is (ValidateCheckedFloatDecimalPlaces 2) "Money must have up to two decimal places"
             )
         <*> Form.Many creditCards { Type=Debit; Flag="Visa"; Value=CheckedInput.Make(0.0) } CreditCardPaymentForm
         |> Form.WithSubmit
         |> Form.Run (fun (moneyAmount, creditCards) ->
             let moneyPayment:list<PaymentMethod> =
-                if (DecimalMoneyValue moneyAmount) > 0m<Money> then
-                    [PaymentMethod.Money (DecimalMoneyValue moneyAmount)]
+                if (MoneyFromCheckedInput moneyAmount) > 0m<Money> then
+                    [PaymentMethod.Money (MoneyFromCheckedInput moneyAmount)]
                 else
                     []
             let creditCardPayments =
                 creditCards
                 |> Seq.toList
-                |> List.map (fun x -> PaymentMethod.CreditCard {Type = x.Type; Flag = x.Flag; TransactionId = Guid.NewGuid().ToString(); Value = DecimalMoneyValue x.Value})
+                |> List.map (fun x -> PaymentMethod.CreditCard {Type = x.Type; Flag = x.Flag; TransactionId = Guid.NewGuid().ToString(); Value = MoneyFromCheckedInput x.Value})
             let payments =
                 List.concat [
                     moneyPayment
