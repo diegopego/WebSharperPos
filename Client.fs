@@ -65,6 +65,15 @@ module Client =
         | Valid(value, inputText) -> decimal value * 1.0m<Quantity>
         | Invalid _ -> 0m<Quantity>
         | Blank _ -> 0m<Quantity>
+
+    let GuidHead (uid:Guid) =
+        let result =
+            uid.ToString().Split '-'
+            |> Array.tryHead
+        
+        match result with
+            |Some value ->  value
+            |None -> ""
     
     let ShowErrorsFor v =
         v
@@ -103,7 +112,7 @@ module Client =
                 items
                 |> List.map (fun item ->
                     div [attr.``class`` "item"] [
-                        text $"UID: {TransactionItemUid.value item.Uid} Product {item.Description} Price {item.Price} Quantity {item.Quantity} TotalPrice {item.TotaPrice}"
+                        text $"UID: {GuidHead (TransactionItemUid.value item.Uid)} Product {item.Description} Price {item.Price} Quantity {item.Quantity} TotalPrice {item.TotaPrice}"
                         button [
                             on.click (fun _ _ ->
                                 itemsInCart.Update(fun items -> items |> List.filter (fun i -> i <> item))
