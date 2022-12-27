@@ -715,7 +715,7 @@ type SaleTransaction = {
 - [Serving SPAs](https://intellifactory.com/user/granicz/20171229-serving-spas)
 - [Reactive forms with WebSharper.Forms](https://intellifactory.com/user/jooseppi12/20211224-reactive-forms-with-websharper-forms)
 - [F# for Fun and Profit - Units of measure](https://fsharpforfunandprofit.com/posts/units-of-measure/) 
-
+- [WebSharper CRUD API Sample](https://github.com/websharper-samples/PeopleClient)
 
 ## How to proceed from here?
 I intend to grow this project so, keep an eye on this article and the github project.
