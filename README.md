@@ -57,6 +57,20 @@ This project is based on the WebSharper client/server template:
 
 [How to setup your environment](https://websharper.com/downloads)
 
+## Running this project
+### Ubuntu 22.04 instructions
+
+I suggest a clean build for the first time:
+`dotnet clean`
+
+compiles and run on Debug configuration. Listens on localhost only:
+
+`dotnet run`
+
+Or run on Release configuration. Listens on all interfaces:
+
+`sudo dotnet run --configuration Release --urls http://0.0.0.0:80`
+
 ## Creating a Point of Sale Single Page Application
 ### Application modules
 Each URL is an endpoint, which is an application module on a desktop app.
@@ -695,9 +709,12 @@ type SaleTransaction = {
 ```
 
 ## Resources
-- Introduction to F# web programming with WebSharper by Adam Granicz:
-- [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/CeMq9Fg-HME/0.jpg)](https://www.youtube.com/watch?v=CeMq9Fg-HME)
-- https://github.com/dotnet-websharper/forms/blob/master/docs/Introduction.md
+- Video: [Introduction to F# web programming with WebSharper by Adam Granicz](https://www.youtube.com/watch?v=CeMq9Fg-HME)
+- Video: [Reactive forms and validation with WebSharper](https://skillsmatter.com/skillscasts/17278-lightning-talk-reactive-forms-and-validation-with-websharper)
+- [Introduction to Forms](https://github.com/dotnet-websharper/forms/blob/master/docs/Introduction.md)
+- [Serving SPAs](https://intellifactory.com/user/granicz/20171229-serving-spas)
+- [Reactive forms with WebSharper.Forms](https://intellifactory.com/user/jooseppi12/20211224-reactive-forms-with-websharper-forms)
+- [F# for Fun and Profit - Units of measure](https://fsharpforfunandprofit.com/posts/units-of-measure/) 
 
 
 ## How to proceed from here?
