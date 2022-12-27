@@ -1,12 +1,3 @@
----
-title: Functional, reactive Point of sale with WebSharper
-published: true
-description: A "enterprise" sample ERP like system made with F# and WebSharper
-tags: fsharp, f#, ERP, websharper
-# cover_image: https://audisoft.com.br/diego/fsadvent2022-websharper/websharper-2.png
-# Use a ratio of 100:42 for best results.
-# published_at: 2022-12-26 12:55 +0000
----
 ## Functional, reactive Point of sale with WebSharper
 
 Manny thanks to [Sergey Tihon](https://twitter.com/sergey_tihon) for organizing the [F# Advent](https://sergeytihon.com/category/f-advent/).
@@ -705,7 +696,5 @@ I intend to grow this project so, keep an eye on this article and the github pro
     - https://developers.websharper.com/docs/v4.x/fs/proxying
     - https://www.yvesdennels.com/posts/websharper-proxy-project/
     - https://github.com/dotnet-websharper/core/issues/1067 Fear not! Thsi issue is already closed!
-- proxima versão: banco de dados sql no servidor e armazenamento local no browser
-- comunicação com o servidr via rpc transparente, sem necessidade de DTO
 
 You can also ping me on Twitter [Diego Pego](https://twitter.com/sergey_tihon)
