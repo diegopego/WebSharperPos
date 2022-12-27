@@ -68,9 +68,5 @@ module Site =
             | EndPoint.Home -> HomePage ctx
             | EndPoint.About -> AboutPage ctx
             | EndPoint.CashFlow -> CashFlowReportPage ctx
-            | EndPoint.SPA SPA.PointOfSale
-            | EndPoint.SPA _ -> PointOfSale ctx
-            // use _ to redirect all SPA related to the route. The SPA takes care of routing internally.
-            // | EndPoint.SPA SPA.Checkout -> PointOfSale ctx
-            // | EndPoint.SPA SPA.Payment -> PointOfSale ctx
+            | EndPoint.SPA _ -> PointOfSale ctx // the _ means that all routes e.g. "/spa/*" will be handed to PointOfSale function. The SPA takes care it's own routes.
         )

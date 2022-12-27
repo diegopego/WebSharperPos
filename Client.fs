@@ -179,7 +179,7 @@ module Client =
             ]
             )
         
-    let TransactionForm () =
+    let RegisterItemForm () =
         Form.Return (fun sku description price quantity -> sku, description, price, quantity)
         // Compose the fields by using the <*> function. Make sure to compose them in the same order as Form.Return arguments
         <*> (Form.Yield "" // sku
@@ -233,7 +233,7 @@ module Client =
     
     let TransactionArea (routerLocation:Var<SPA>) =
         Templates.MainTemplate.TransactionArea()
-            .RegisterItems(TransactionForm())
+            .RegisterItems(RegisterItemForm())
             .RegisteredItems(RegisteredItemsForm())
             .StartPayment(fun _ ->
                 routerLocation.Set SPA.Checkout
