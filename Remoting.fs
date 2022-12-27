@@ -29,7 +29,7 @@ module Server =
             return R input
         }
     [<Rpc>]
-    let GenerateCashFlowReport (date:DateTime) =
+    let GenerateCashFlowReport (date:DateTime): Async<SaleTransaction list> =
         async {
             // returns complex data on purpose to demonstrate that you can pass complex data and treat it on the client.
             return GetSalesTransactions()

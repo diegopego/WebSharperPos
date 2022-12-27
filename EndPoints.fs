@@ -6,7 +6,7 @@ module EndPoints=
         | [<EndPoint "/point-of-sale">] PointOfSale
         | [<EndPoint "/point-of-sale/checkout">] Checkout
         | [<EndPoint "/point-of-sale/payment">] Payment
-        | [<EndPoint "/point-of-sale/receipt">] Receipt of uid: string
+        | [<EndPoint "/point-of-sale/receipt">] Receipt of saleUid: string
     type EndPoint =
         | [<EndPoint "/">] Home
         | [<EndPoint "/about">] About

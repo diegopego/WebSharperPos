@@ -154,14 +154,7 @@ module Client =
     let ItemsToCheckoutForm () =
         CartForm ()
         |> Form.Render (fun itemsInCart _ ->
-            // gotcha if you pass this into render, only the last will be rendered, and no error wil be thrown. 
-            // label [] [text "first label"]
-            // label [] [text "second label"]
-            // this renders correctly:
-            // div [] [
-            //     label [] [text "first label"]
-            //     label [] [text "second label"]
-            //     ]
+            // gotcha: if you pass this code without the outer div [] [], only the last will be rendered, and no error wil be thrown. 
             div [] [
                 div [] [
                     label [] [text "transactionUid: "]; label [] [text transactionUidVar.Value]
@@ -377,10 +370,10 @@ module Client =
                     h1 [] [text $"SPA payment"]
                     PaymentForm (routerLocation, SPA.Checkout, [|{ Type=Debit; Flag= "MasterCard"; Value= CheckedInput.Make(0.0) }|])
                 ]
-            | SPA.Receipt uid ->
+            | SPA.Receipt saleUid ->
                 Doc.Concat [
                     h1 [] [text $"SPA receipt"]
-                    ReceiptForm (uid, routerLocation)
+                    ReceiptForm (saleUid, routerLocation)
                 ]
             )
         
