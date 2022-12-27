@@ -38,7 +38,7 @@ You'll be aided by great tools like Jetbrains Rider and Visual Studio Code.
 ### Look Ma! No JavaScript! Oh wait, how about that fancy JS Widget?
 You can use external JavaScript libraries. In fact WebSharper have extensions to several including: ExtJS, Highcharts, KendoUI, Sencha, MathJS, JsPDF.
 
-By using the [WebSharper Interface Generator](https://developers.websharper.com/docs/v4.x/fs/wig) you can write your own proxies.
+By using the [WebSharper Interface Generator](https://developers.websharper.com/docs/v4.x/fs/wig) you can write your own bindings.
 
 ### You may use decimal
 It seems like a silly think to say out loud, but there are some languages that make the use of decimal a pain. Not saying names.
