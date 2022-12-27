@@ -38,8 +38,15 @@ module Site =
 
     let HomePage ctx =
         Templating.Main ctx EndPoint.Home "Home" [
-            text "Here is a comon link to "
-            a [attr.href (ctx.Link (EndPoint.SPA SPA.PointOfSale)) ] [text "Point of sale SPA"]
+            div [] [
+                text "Here is a comon link to "
+                a [attr.href (ctx.Link (EndPoint.SPA SPA.PointOfSale)) ] [text "Point of sale SPA"]
+            ]
+            div [] [
+                text "Here is a comon link to "
+                a [attr.href (ctx.Link (EndPoint.CashFlow)) ] [text "Cash flow report"]
+            ]
+            
             h1 [] [text "Say Hi to the server!"]
             div [] [client (Client.Main())]
         ]
