@@ -4,7 +4,7 @@ Manny thanks to [Sergey Tihon](https://twitter.com/sergey_tihon) for organizing 
 
 ## Show me the code!
 This is a simple application, ERP like application.
-You can check out the code [here](https://github.com/diegopego/WebSharperPos) and a live deployment of the project [here](http://fsadvent2022.audisoft.com.br/fsadven2022).
+You can check out the code [here](https://github.com/diegopego/WebSharperPos) and a live deployment of the project [here](http://fsadvent2022.audisoft.com.br).
 
 ## Live article
 This is a live article. The next thing I hope to implement is:
@@ -53,7 +53,7 @@ The store attendant welcomes the customer and use the POS to sell.
 ## Setup
 This project is based on the WebSharper client/server template:
 
-```dotnet new websharper-web -lang f# -n ClientServer```
+`dotnet new websharper-web -lang f# -n ClientServer`
 
 [How to setup your environment](https://websharper.com/downloads)
 
@@ -62,6 +62,7 @@ This project is based on the WebSharper client/server template:
 Each URL is an endpoint, which is an application module on a desktop app.
 This shows how to setup the EndPoints to a SPA.
 Differently of the client/server EndPoints, the SPA EndPoints are handled within the SAP main function: Client.PointOfSaleMain
+
 ```fsharp
 type SPA =
     | [<EndPoint "/point-of-sale">] PointOfSale
@@ -140,7 +141,9 @@ let TransactionArea (routerLocation:Var<SPA>) =
             )
         .Doc()
 ```
+
 Each ws-hole will be filled with a form.
+
 ```html
 <div ws-template="TransactionArea" class="flex-container">
     <div class="registerItemsArea">
@@ -168,15 +171,15 @@ Don't be scared with all the html divs on the code that you will be facing. Most
 
 Unfortunately I did not have the time to do it.
 
-By using ```|> Form.WithSubmit```, the form will execute ```|> Form.Run``` when the submit button is pressed.
+By using `|> Form.WithSubmit`, the form will execute `|> Form.Run` when the submit button is pressed.
 
-On this ```Form.Run``` block, notice the transactionItemsVar.
+On this `Form.Run` block, notice the transactionItemsVar.
 
 This is a reactive var. It can be reactively observed or two-way bound to HTML input elements.
 
 A reactive var is available to all forms. You may think of it as a public or private variable
 
-As you will see in "Registered items form" section, the ```CartForm``` is bound to ```transactionItemsVar``` in order to render the registered items list each time it's content is updated.
+As you will see in "Registered items form" section, the `CartForm` is bound to `transactionItemsVar` in order to render the registered items list each time it's content is updated.
 
 You don't have to write a single line of JavaScript. You may do so if you wish. I don't. Even when communicating to the server.
 
@@ -234,13 +237,13 @@ let RegisterItemForm () =
     )
 ```
 
-```UpdateAmountDueVar``` updates the two reactive Var that, guess what? will be updated automatically in any form bounded to it.
+`UpdateAmountDueVar` updates the two reactive Var that, guess what? will be updated automatically in any form bounded to it.
 
 I used two variables on purpose to demonstrate a couple of ways they can be used.
 
-The ```amountDueVarTxt``` is bounded in the ```RegisteredItemsForm```.
+The `amountDueVarTxt` is bounded in the `RegisteredItemsForm`.
 
-It updates the amount due text on the fly, after you register or remove an item. Look for ```textView AmountDueRv````.
+It updates the amount due text on the fly, after you register or remove an item. Look for `textView AmountDueRv`.
 
 ```fsharp
 let UpdateAmountDueVar () =
@@ -257,15 +260,17 @@ A Form have it's logic separated from the rendering.
 
 The CartForm is used in two different endpoints by two distinct render functions. It uses Form.YieldVar instead of Yield to use a reactive Var.
 
-On ```|> Form.Render```, itemsInCart refers to the transactionItemsVar bound in CartForm function
+On `|> Form.Render`, itemsInCart refers to the transactionItemsVar bound in CartForm function
 
 The lambda function passed on this binding install the function that will be used to render whenever the transactionItemsVar is updated.
+
 ```fsharp
 itemsInCart.View
 |> Doc.BindView (fun items ->
 ```
 
 This is the "remove registered item from sale" event handler. The ```items``` refers to ```transactionItemsVar``` contents.
+
 ```fsharp
 on.click (fun _ _ ->
     itemsInCart.Update(fun items -> items |> List.filter (fun i -> i <> item))
@@ -314,7 +319,7 @@ let RegisteredItemsForm () =
         ]
 ```
 
-When you hit the "Checkout" Button, the event handler defined on the ```TransitionArea().StartPayment()``` is triggered
+When you hit the "Checkout" Button, the event handler defined on the `TransitionArea().StartPayment()` is triggered
 Here is a refresher:
 ```fsharp
 let TransactionArea (routerLocation:Var<SPA>) =
@@ -361,7 +366,7 @@ routerLocation.View.Doc(function
         ]
 ```
 
-Here, ```CartForm``` is rendered in a different way. The ```items``` refers to ```transactionItemsVar``` contents.
+Here, `CartForm` is rendered in a different way. The `items` refers to `transactionItemsVar` contents.
 ```fsharp
 let ItemsToCheckoutForm () =
     CartForm ()
@@ -391,9 +396,10 @@ let ItemsToCheckoutForm () =
 Dynamic forms: It may seem overwhelmingly difficult, but once you got the grasp of it, they're a lot of fun to work with.
 
 One more EndPoints to our collection.
-```PaymentForm``` third's argument is a sequence of one ```CreditCardFormFields```. It's used to initialize the Multiple Credit Cards form. Had I passed two items, there would be two "Pay with Credit Card" lines.
+`PaymentForm` third's argument is a sequence of one `CreditCardFormFields`. It's used to initialize the Multiple Credit Cards form. Had I passed two items, there would be two "Pay with Credit Card" lines.
 
-```routerLocation``` is responsible to tell the browser to change to an EndPoint. As the code show, it handles this SPA EndPoints.
+`routerLocation` is responsible to tell the browser to change to an EndPoint. As the code show, it handles this SPA EndPoints.
+
 ```fsharp
 type CreditCardFormFields = {
     Type : CreditCardType
@@ -419,20 +425,18 @@ let PointOfSaleMain () =
 ```
 
 The Payment Form arguments are:
-```backLocation``` is used in the Back button event handler.
+`backLocation` is used in the Back button event handler.
 
-The user is able to add as many Credit Cars as needed thanks to ```Form.Many```.
+The user is able to add as many Credit Cars as needed thanks to `Form.Many`.
 
 Let's break down this line:
-```<*> Form.Many creditCards { Type=Debit; Flag="Visa"; Value=CheckedInput.Make(0.0) } CreditCardPaymentForm```
+`<*> Form.Many creditCards { Type=Debit; Flag="Visa"; Value=CheckedInput.Make(0.0) } CreditCardPaymentForm`
 
-```crediCards``` The initial collection of values. Check out the ```| SPA.Payment``` EndPoint for a refresher.
+`crediCards` The initial collection of values. Check out the `| SPA.Payment` EndPoint for a refresher.
 
-```{ Type=Debit; Flag="Visa"; Value=CheckedInput.Make(0.0) }``` The value of type CreditCardFormFields with which the new sub-form should be initialized when the user adds a new Credit Card.
+`{ Type=Debit; Flag="Visa"; Value=CheckedInput.Make(0.0) }` The value of type CreditCardFormFields with which the new sub-form should be initialized when the user adds a new Credit Card.
 
-```CreditCardPaymentForm``` Is the form that will be rendered when ```creditCards.Render (fun ops cardType cardFlag cardValue ->```
-
-
+`CreditCardPaymentForm` Is the form that will be rendered when `creditCards.Render (fun ops cardType cardFlag cardValue ->`
 
 ```fsharp
 let PaymentForm (routerLocation:Var<SPA>, backLocation, creditCards:seq<CreditCardFormFields>) =
@@ -504,7 +508,7 @@ EndPoints be of GET or POST in case you're wondering.
 
 The Receipt EndPoint definition:
 
-```Receipt of uid: string``` defines that this EndPoint have an argument of type string.
+`Receipt of uid: string` defines that this EndPoint have an argument of type string.
 
 The URL will have this format: "https://localhost:5001/spa/point-of-sale/receipt/string-containing-the-sale-uid"
 
@@ -513,7 +517,9 @@ type SPA =
     ...
     | [<EndPoint "/point-of-sale/receipt">] Receipt of saleUid: string
 ```
+
 The Receipt EndPoint Handler:
+
 ```fsharp
 let PointOfSaleMain () =
     ...
@@ -526,6 +532,7 @@ let PointOfSaleMain () =
             ]
         )
 ```
+
 Finally e have some Server action! Brace yourself and prepare to write a bit of JavaScript and some DTOs.
 
 ### Just kidding.
@@ -535,11 +542,12 @@ But writing client/server applications in WebSharper is! It takes care of it all
 
 The serialization is all done for you. You just need to call an RPC basically the same way you would call a local function.
 
-In ```Server.SaleReceipt``` I chose to let the rendering work to the server, and passing a simple list of strings to the client.
+In `Server.SaleReceipt` I chose to let the rendering work to the server, and passing a simple list of strings to the client.
 
 The cash flow Report, on the other hand, the server will deliver a complex type.
 
 Client side:
+
 ```fsharp
 let ReceiptForm (uid:string, routerLocation:Var<SPA>) =
     div [] [
@@ -565,6 +573,7 @@ let ReceiptForm (uid:string, routerLocation:Var<SPA>) =
 ```
 
 Server side:
+
 ```fsharp
 [<Rpc>]
 let SaleReceipt (saleUid:SaleTransactionUid.T)=
@@ -600,8 +609,9 @@ This EndPoint is intended to open up the cash flow report page.
 
 The user clicks on the Report button.
 
-It then calls the server asynchronously, and receives a list of ```<SaleTransaction>```
-Finally, the rendering occurs on the client side, thanks to that ```client (```
+It then calls the server asynchronously, and receives a list of `<SaleTransaction>`
+Finally, the rendering occurs on the client side, thanks to that `client (`
+
 ```fsharp
   let CashFlowReportPage ctx =
       let title = $"Cash Flow Report"
@@ -611,6 +621,7 @@ Finally, the rendering occurs on the client side, thanks to that ```client (```
 ```
 
 Client side:
+
 ```fsharp
 let RetrieveCashFlowReport () =
     Templates.MainTemplate.ReportForm()
@@ -633,6 +644,7 @@ let RetrieveCashFlowReport () =
 ```
 
 Server side:
+
 ```fsharp
 [<Rpc>]
 let GenerateCashFlowReport (date:DateTime): Async<SaleTransaction list> =
@@ -641,7 +653,9 @@ let GenerateCashFlowReport (date:DateTime): Async<SaleTransaction list> =
         return GetSalesTransactions()
     }
 ```
+
 The types that are being sent over the RPC call:
+
 ```fsharp
 type TransactionItem = {
     Uid: TransactionItemUid.T
@@ -679,6 +693,7 @@ type SaleTransaction = {
         Quantity = 1.5m<Quantity> } ]
   Payments = [ PaymentMethodsDomain.Money 13m<Money> ] }
 ```
+
 ## Resources
 - Introduction to F# web programming with WebSharper by Adam Granicz:
 - [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/CeMq9Fg-HME/0.jpg)](https://www.youtube.com/watch?v=CeMq9Fg-HME)
