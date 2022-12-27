@@ -727,6 +727,6 @@ I intend to grow this project so, keep an eye on this article and the github pro
 - For .net libraries:
     - https://developers.websharper.com/docs/v4.x/fs/proxying
     - https://www.yvesdennels.com/posts/websharper-proxy-project/
-    - https://github.com/dotnet-websharper/core/issues/1067 Fear not! Thsi issue is already closed!
+    - https://github.com/dotnet-websharper/core/issues/1067 Fear not! This issue is already closed!
 
-You can also ping me on Twitter [Diego Pego](https://twitter.com/sergey_tihon)
+You can also ping me on Twitter [Diego Pego](https://twitter.com/dpego)
