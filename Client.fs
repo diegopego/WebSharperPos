@@ -31,21 +31,18 @@ module Client =
     // The endpoint argument allows to share the form link and restore the state from it. e.g.:
     // https://localhost:5001/spa/point-of-sale/receipt/5735514d-d544-4890-bd74-b763d025160e
     // You may use both simultaneously. 
-    let amountDueVar = Var.Create 0.0
+    let amountDueVar = Var.Create 0.0m
     let amountDueVarTxt = Var.Create ""
-    
     let UpdateAmountDueVar () =
-        let PriceToFloat (p:decimal<Money Quantity>) =
-            // unwrap to decimal, getting rid of unit of measure, then convert to float. because at this time, decimal is not supported by WebSharper.Forms
-            p |> decimal |> float
-        
-        let total = transactionItemsVar.Value
-                    |> List.map (fun v -> PriceToFloat v.TotaPrice ) // convert List<TransactionItem> to List<float>
-                    |> List.sumBy id // id is shorthand to (fun v -> v)
-        
-        amountDueVar.Value <- total
+        // let total = transactionItemsVar.Value
+        //             |> List.map (fun v -> v.TotaPrice)
+        //             |> List.sumBy id // id is shorthand to (fun v -> v)
+        // List.sumBy does not support decimal by the time this was written.
+        let mutable total = 0m<Money Quantity>
+        for i in transactionItemsVar.Value do
+            total <- total + i.TotaPrice
+        amountDueVar.Value <- decimal total
         amountDueVarTxt.Value <- $"{total}"
-        
     let transactionUidVar = Var.Create ""
     let StartSaleTransaction ()=
         transactionUidVar.Update(fun _ -> Guid.NewGuid().ToString())
@@ -55,28 +52,29 @@ module Client =
     type CreditCardFormFields = {
         Type : CreditCardType
         Flag : string
-        Value : CheckedInput<float>
+        Value : CheckedInput<decimal>
     }
     
-    let ValidateCheckedFloatPositive (f:CheckedInput<float>)=
+    let ValidateCheckedDecimalPositive (f:CheckedInput<decimal>)=
         match f with
-        | Valid(value, inputText) -> value > 0
+        | Valid(value, inputText) -> value > 0m
         | Invalid _ -> false
         | Blank _ -> false
     
-    let ValidateCheckedFloatDecimalPlaces places (f:CheckedInput<float>) =
+    let ValidateCheckedDecimalPlaces places (f:CheckedInput<decimal>) =
         match f with
-        | Valid(value, inputText) -> Math.Round(value, places) = value
+        // MathJS.Math.Round have no overload for decimal
+        | Valid(value, inputText) -> Math.Round(float value, places) = float value
         | Invalid _ -> false
         | Blank _ -> false
     
-    let MoneyFromCheckedInput (x:CheckedInput<float>)=
+    let MoneyFromCheckedInput (x:CheckedInput<decimal>)=
         match x with
         | Valid(value, inputText) -> decimal value * 1.0m<Money>
         | Invalid _ -> 0m<Money>
         | Blank _ -> 0m<Money>
     
-    let QuantityFromCheckedInput (x:CheckedInput<float>)=
+    let QuantityFromCheckedInput (x:CheckedInput<decimal>)=
         match x with
         | Valid(value, inputText) -> decimal value * 1.0m<Quantity>
         | Invalid _ -> 0m<Quantity>
@@ -179,19 +177,17 @@ module Client =
             |> Validation.IsNotEmpty "Must enter a SKU")
         <*> (Form.Yield "" // description
             |> Validation.IsNotEmpty "Must enter a description")
-        <*> (Form.Yield (CheckedInput.Make 0.0)
-            |> Validation.Is (fun x -> ValidateCheckedFloatPositive x) "Price must be positive number" // This could be simplified to |> Validation.Is ValidateCheckedFloatPositive "Quantity must be positive number"
-            |> Validation.Is (fun x -> ValidateCheckedFloatDecimalPlaces 2 x) "Price must have up to two decimal places" // This could be simplified to |> Validation.Is (ValidateCheckedFloatDecimalPlaces 2) "Quantity must have up to two decimal places"
+        <*> (Form.Yield (CheckedInput.Make 0.0m)
+            |> Validation.Is (fun x -> ValidateCheckedDecimalPositive x) "Price must be positive number" // This could be simplified to |> Validation.Is ValidateCheckedDecimalPositive "Quantity must be positive number"
+            |> Validation.Is (fun x -> ValidateCheckedDecimalPlaces 2 x) "Price must have up to two decimal places" // This could be simplified to |> Validation.Is (ValidateCheckedDecimalPlaces 2) "Quantity must have up to two decimal places"
             )
-        <*> (Form.Yield (CheckedInput.Make 0.0)
-            |> Validation.Is ValidateCheckedFloatPositive "Quantity must be positive number"
-            |> Validation.Is (ValidateCheckedFloatDecimalPlaces 2) "Quantity must have up to two decimal places"
+        <*> (Form.Yield (CheckedInput.Make 0.0m)
+            |> Validation.Is ValidateCheckedDecimalPositive "Quantity must be positive number"
+            |> Validation.Is (ValidateCheckedDecimalPlaces 2) "Quantity must have up to two decimal places"
             )
         |> Form.WithSubmit // without this, the validation will run at each keystroke. add the submit button
         |> Form.Run (fun (sku, description, price, quantity) ->
             // Form.Run arguments must be in the same order as Form.Return
-            // At the time this was written, there is no support decimal input.
-            // Here is the place to convert CheckedInput<float> to the type needed by the RPC (Remote Procedure Call)
             let transactionItem:TransactionItem = {Uid=TransactionItemUid.create (Guid.NewGuid()) ; Sku=sku; Description=description; Price=MoneyFromCheckedInput price; TotaPrice=((MoneyFromCheckedInput price) * (QuantityFromCheckedInput quantity)); Quantity=(QuantityFromCheckedInput quantity)}
             transactionItemsVar.Update(fun items -> List.append items [transactionItem])
             UpdateAmountDueVar ()
@@ -213,11 +209,11 @@ module Client =
                     ShowErrorsFor (submit.View.Through description)
                 ]
                 div [] [
-                    label [] [text "price: "]; Doc.InputType.Float [attr.``step`` "0.01"; attr.``min`` "0"] price
+                    label [] [text "price: "]; Doc.InputType.Decimal [attr.``min`` "0"] price 0.21m
                     ShowErrorsFor (submit.View.Through price)
                 ]
                 div [] [
-                    label [] [text "quantity: "]; Doc.InputType.Float [attr.``step`` "0.01"; attr.``min`` "0"] quantity
+                    label [] [text "quantity: "]; Doc.InputType.Decimal [attr.``min`` "0"] quantity 0.32m
                     ShowErrorsFor (submit.View.Through quantity)
                 ]
                 Doc.Button "Register" [] submit.Trigger
@@ -234,12 +230,12 @@ module Client =
             .Doc()
 
     let CreditCardPaymentForm (init:CreditCardFormFields) =
-        Form.Return (fun cardType cardFlag (cardValue:CheckedInput<float>) -> {Type = cardType; Flag=cardFlag; Value=cardValue})
+        Form.Return (fun cardType cardFlag (cardValue:CheckedInput<decimal>) -> {Type = cardType; Flag=cardFlag; Value=cardValue})
         <*> Form.Yield init.Type
         <*> Form.Yield init.Flag
-        <*> (Form.Yield (CheckedInput.Make 0.0)
-            |> Validation.Is ValidateCheckedFloatPositive "Card value must be positive number"
-            |> Validation.Is (ValidateCheckedFloatDecimalPlaces 2) "Card value must have up to two decimal places"
+        <*> (Form.Yield (CheckedInput.Make 0.0m)
+            |> Validation.Is ValidateCheckedDecimalPositive "Card value must be positive number"
+            |> Validation.Is (ValidateCheckedDecimalPlaces 2) "Card value must have up to two decimal places"
             )
         
     let RenderCreditCardPaymentForm cardType cardFlag cardValue=
@@ -249,7 +245,7 @@ module Client =
             label [] [text "Pay with Credit Card: "]
             Doc.InputType.Select [] RenderCardType [ Debit; Credit ] cardType
             label [] [text "Card Flag: "]; Doc.InputType.Text [] cardFlag
-            label [] [text "Value: "]; Doc.InputType.Float [attr.``step`` "0.01"; attr.``min`` "0"] cardValue
+            label [] [text "Value: "]; Doc.InputType.Decimal [attr.``min`` "0"] cardValue 0.01m
     ]
     
     let receiptVar = Var.Create ""
@@ -257,10 +253,10 @@ module Client =
     let PaymentForm (routerLocation:Var<SPA>, backLocation, creditCards:seq<CreditCardFormFields>) =
         Form.Return (fun moneyAmount creditCards -> moneyAmount, creditCards)
         <*> (Form.Yield (CheckedInput.Make amountDueVar.Value)
-            |> Validation.Is (ValidateCheckedFloatPositive) "Money must be positive number"
-            |> Validation.Is (ValidateCheckedFloatDecimalPlaces 2) "Money must have up to two decimal places"
+            |> Validation.Is (ValidateCheckedDecimalPositive) "Money must be positive number"
+            |> Validation.Is (ValidateCheckedDecimalPlaces 2) "Money must have up to two decimal places"
             )
-        <*> Form.Many creditCards { Type=Debit; Flag="Visa"; Value=CheckedInput.Make(0.0) } CreditCardPaymentForm
+        <*> Form.Many creditCards { Type=Debit; Flag="Visa"; Value=CheckedInput.Make(0.0m) } CreditCardPaymentForm
         |> Form.WithSubmit
         |> Form.Run (fun (moneyAmount, creditCards) ->
             let moneyPayment:list<PaymentMethod> =
@@ -297,7 +293,7 @@ module Client =
                 ]
                 div [] [
                     label [] [text "Money"]
-                    Doc.InputType.Float [attr.``step`` "0.01"; attr.``min`` "0"] paymentMethodAmount
+                    Doc.InputType.Decimal [attr.``min`` "0"] paymentMethodAmount 0.01m
                     ShowErrorsFor (submit.View.Through paymentMethodAmount)
                 ]
                 div [] [
@@ -346,6 +342,8 @@ module Client =
             | SPA.PointOfSale ->
                 Doc.Concat [
                     h1 [] [text "SPA point of sale"]
+                    h1 [] [text $"Teste de float {0.3-0.1}"]
+                    h1 [] [text $"Teste de decimal {0.3m-0.1m}"]
                     TransactionArea (routerLocation)
                 ]
             | SPA.Checkout ->
@@ -368,7 +366,7 @@ module Client =
             | SPA.Payment ->
                 Doc.Concat [
                     h1 [] [text $"SPA payment"]
-                    PaymentForm (routerLocation, SPA.Checkout, [|{ Type=Debit; Flag= "MasterCard"; Value= CheckedInput.Make(0.0) }|])
+                    PaymentForm (routerLocation, SPA.Checkout, [|{ Type=Debit; Flag= "MasterCard"; Value= CheckedInput.Make(0.0m) }|])
                 ]
             | SPA.Receipt saleUid ->
                 Doc.Concat [
