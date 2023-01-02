@@ -34,13 +34,9 @@ module Client =
     let amountDueVar = Var.Create 0.0m
     let amountDueVarTxt = Var.Create ""
     let UpdateAmountDueVar () =
-        // let total = transactionItemsVar.Value
-        //             |> List.map (fun v -> v.TotaPrice)
-        //             |> List.sumBy id // id is shorthand to (fun v -> v)
-        // List.sumBy does not support decimal by the time this was written.
-        let mutable total = 0m<Money Quantity>
-        for i in transactionItemsVar.Value do
-            total <- total + i.TotaPrice
+        let total = transactionItemsVar.Value
+                    |> List.map (fun v -> v.TotaPrice)
+                    |> List.sumBy id // id is shorthand to (fun v -> v)
         amountDueVar.Value <- decimal total
         amountDueVarTxt.Value <- $"{total}"
     let transactionUidVar = Var.Create ""
@@ -63,12 +59,11 @@ module Client =
     
     let ValidateCheckedDecimalPlaces places (f:CheckedInput<decimal>) =
         match f with
-        // MathJS.Math.Round have no overload for decimal
-        | Valid(value, inputText) -> Math.Round(float value, places) = float value
+        | Valid(value, inputText) -> Math.Round(value, places) = value
         | Invalid _ -> false
         | Blank _ -> false
     
-    let MoneyFromCheckedInput (x:CheckedInput<decimal>)=
+    let CheckedInputValue (x:CheckedInput<decimal>)=
         match x with
         | Valid(value, inputText) -> decimal value * 1.0m<Money>
         | Invalid _ -> 0m<Money>
@@ -179,16 +174,16 @@ module Client =
             |> Validation.IsNotEmpty "Must enter a description")
         <*> (Form.Yield (CheckedInput.Make 0.0m)
             |> Validation.Is (fun x -> ValidateCheckedDecimalPositive x) "Price must be positive number" // This could be simplified to |> Validation.Is ValidateCheckedDecimalPositive "Quantity must be positive number"
-            |> Validation.Is (fun x -> ValidateCheckedDecimalPlaces 2 x) "Price must have up to two decimal places" // This could be simplified to |> Validation.Is (ValidateCheckedDecimalPlaces 2) "Quantity must have up to two decimal places"
+            |> Validation.Is (fun x -> ValidateCheckedDecimalPlaces 2m x) "Price must have up to two decimal places" // This could be simplified to |> Validation.Is (ValidateCheckedDecimalPlaces 2m) "Quantity must have up to two decimal places"
             )
         <*> (Form.Yield (CheckedInput.Make 0.0m)
             |> Validation.Is ValidateCheckedDecimalPositive "Quantity must be positive number"
-            |> Validation.Is (ValidateCheckedDecimalPlaces 2) "Quantity must have up to two decimal places"
+            |> Validation.Is (ValidateCheckedDecimalPlaces 2m) "Quantity must have up to two decimal places"
             )
         |> Form.WithSubmit // without this, the validation will run at each keystroke. add the submit button
         |> Form.Run (fun (sku, description, price, quantity) ->
             // Form.Run arguments must be in the same order as Form.Return
-            let transactionItem:TransactionItem = {Uid=TransactionItemUid.create (Guid.NewGuid()) ; Sku=sku; Description=description; Price=MoneyFromCheckedInput price; TotaPrice=((MoneyFromCheckedInput price) * (QuantityFromCheckedInput quantity)); Quantity=(QuantityFromCheckedInput quantity)}
+            let transactionItem:TransactionItem = {Uid=TransactionItemUid.create (Guid.NewGuid()) ; Sku=sku; Description=description; Price=CheckedInputValue price; TotaPrice=((CheckedInputValue price) * (QuantityFromCheckedInput quantity)); Quantity=(QuantityFromCheckedInput quantity)}
             transactionItemsVar.Update(fun items -> List.append items [transactionItem])
             UpdateAmountDueVar ()
             //JS.Alert($"Transaction UID: {transactionUid} Item: {transactionItem.Description} Price: {transactionItem.Price}")
@@ -235,7 +230,7 @@ module Client =
         <*> Form.Yield init.Flag
         <*> (Form.Yield (CheckedInput.Make 0.0m)
             |> Validation.Is ValidateCheckedDecimalPositive "Card value must be positive number"
-            |> Validation.Is (ValidateCheckedDecimalPlaces 2) "Card value must have up to two decimal places"
+            |> Validation.Is (ValidateCheckedDecimalPlaces 2m) "Card value must have up to two decimal places"
             )
         
     let RenderCreditCardPaymentForm cardType cardFlag cardValue=
@@ -254,20 +249,20 @@ module Client =
         Form.Return (fun moneyAmount creditCards -> moneyAmount, creditCards)
         <*> (Form.Yield (CheckedInput.Make amountDueVar.Value)
             |> Validation.Is (ValidateCheckedDecimalPositive) "Money must be positive number"
-            |> Validation.Is (ValidateCheckedDecimalPlaces 2) "Money must have up to two decimal places"
+            |> Validation.Is (ValidateCheckedDecimalPlaces 2m) "Money must have up to two decimal places"
             )
         <*> Form.Many creditCards { Type=Debit; Flag="Visa"; Value=CheckedInput.Make(0.0m) } CreditCardPaymentForm
         |> Form.WithSubmit
         |> Form.Run (fun (moneyAmount, creditCards) ->
             let moneyPayment:list<PaymentMethod> =
-                if (MoneyFromCheckedInput moneyAmount) > 0m<Money> then
-                    [PaymentMethod.Money (MoneyFromCheckedInput moneyAmount)]
+                if (CheckedInputValue moneyAmount) > 0m<Money> then
+                    [PaymentMethod.Money (CheckedInputValue moneyAmount)]
                 else
                     []
             let creditCardPayments =
                 creditCards
                 |> Seq.toList
-                |> List.map (fun x -> PaymentMethod.CreditCard {Type = x.Type; Flag = x.Flag; TransactionId = Guid.NewGuid().ToString(); Value = MoneyFromCheckedInput x.Value})
+                |> List.map (fun x -> PaymentMethod.CreditCard {Type = x.Type; Flag = x.Flag; TransactionId = Guid.NewGuid().ToString(); Value = CheckedInputValue x.Value})
             let payments =
                 List.concat [
                     moneyPayment
@@ -342,8 +337,9 @@ module Client =
             | SPA.PointOfSale ->
                 Doc.Concat [
                     h1 [] [text "SPA point of sale"]
-                    h1 [] [text $"Teste de float {0.3-0.1}"]
-                    h1 [] [text $"Teste de decimal {0.3m-0.1m}"]
+                    h1 [] [text $"float sum {1.0+0.1+2.0+0.2}"]
+                    h1 [] [text $"decimal sum {1m+0.1m+2m+0.2m}"]
+                    h1 [] [text $"decimal Round {Math.Round(1.12359m, 2m)}"]
                     TransactionArea (routerLocation)
                 ]
             | SPA.Checkout ->
