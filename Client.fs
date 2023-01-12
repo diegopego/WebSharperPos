@@ -62,9 +62,7 @@ module Client =
     
     let ValidateCheckedDecimalPlaces places (f:CheckedInput<decimal>) =
         match f with
-        | Valid(value, inputText) ->
-            let r = Math.Round(value, places)
-            r = value
+        | Valid(value, inputText) -> Math.Round(value, places) = value
         | Invalid _ -> false
         | Blank _ -> false
     
