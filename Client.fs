@@ -179,7 +179,6 @@ module Client =
             |> Validation.IsNotEmpty "Must enter a description")
         <*> (Form.Yield (CheckedInput.Make 0.0m)
             |> Validation.Is (fun x -> ValidateCheckedDecimalPositive x) "Price must be positive number" // This could be simplified to |> Validation.Is ValidateCheckedDecimalPositive "Quantity must be positive number"
-            |> Validation.Is (fun x -> ValidateCheckedDecimalPlaces 2m x) "Price must have up to two decimal places" // This could be simplified to |> Validation.Is (ValidateCheckedDecimalPlaces 2m) "Quantity must have up to two decimal places"
             )
         <*> (Form.Yield (CheckedInput.Make 0.0m)
             |> Validation.Is (ValidateCheckedDecimalPlaces 2m) "Quantity must have up to two decimal places"
@@ -208,11 +207,11 @@ module Client =
                     ShowErrorsFor (submit.View.Through description)
                 ]
                 div [] [
-                    label [] [text "price: "]; Doc.InputType.Decimal [attr.``min`` "0"] price 0.21m
+                    label [] [text "Must be positive number: "]; Doc.InputType.Decimal [] price 0.1m
                     ShowErrorsFor (submit.View.Through price)
                 ]
                 div [] [
-                    label [] [text "quantity: "]; Doc.InputType.Decimal [attr.``min`` "0"] quantity 0.32m
+                    label [] [text "Only two decimal places: "]; Doc.InputType.Decimal [] quantity 0.1m
                     ShowErrorsFor (submit.View.Through quantity)
                 ]
                 Doc.Button "Register" [] submit.Trigger
