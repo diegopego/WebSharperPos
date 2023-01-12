@@ -34,10 +34,11 @@ module Client =
     let amountDueVar = Var.Create 0.0m
     let amountDueVarTxt = Var.Create ""
     let UpdateAmountDueVar () =
-        let total = transactionItemsVar.Value
+        let itemsSum = transactionItemsVar.Value
                     |> List.map (fun v -> v.TotaPrice)
                     |> List.sumBy id // id is shorthand to (fun v -> v)
-        amountDueVar.Value <- decimal total
+        let total = Math.Round(decimal itemsSum, 2m) // decimal unwraps to decimal, getting rid of the unit of measure
+        amountDueVar.Value <- total
         amountDueVarTxt.Value <- $"{total}"
     let transactionUidVar = Var.Create ""
     let StartSaleTransaction ()=
@@ -53,13 +54,17 @@ module Client =
     
     let ValidateCheckedDecimalPositive (f:CheckedInput<decimal>)=
         match f with
-        | Valid(value, inputText) -> value > 0m
+        // This should work
+        // | Valid(value, inputText) -> value > 0.0m
+        | Valid(value, inputText) -> MathJS.Math.Larger(value, 0.0m) |> As<bool>
         | Invalid _ -> false
         | Blank _ -> false
     
     let ValidateCheckedDecimalPlaces places (f:CheckedInput<decimal>) =
         match f with
-        | Valid(value, inputText) -> Math.Round(value, places) = value
+        | Valid(value, inputText) ->
+            let r = Math.Round(value, places)
+            r = value
         | Invalid _ -> false
         | Blank _ -> false
     
@@ -177,7 +182,6 @@ module Client =
             |> Validation.Is (fun x -> ValidateCheckedDecimalPlaces 2m x) "Price must have up to two decimal places" // This could be simplified to |> Validation.Is (ValidateCheckedDecimalPlaces 2m) "Quantity must have up to two decimal places"
             )
         <*> (Form.Yield (CheckedInput.Make 0.0m)
-            |> Validation.Is ValidateCheckedDecimalPositive "Quantity must be positive number"
             |> Validation.Is (ValidateCheckedDecimalPlaces 2m) "Quantity must have up to two decimal places"
             )
         |> Form.WithSubmit // without this, the validation will run at each keystroke. add the submit button
@@ -248,7 +252,6 @@ module Client =
     let PaymentForm (routerLocation:Var<SPA>, backLocation, creditCards:seq<CreditCardFormFields>) =
         Form.Return (fun moneyAmount creditCards -> moneyAmount, creditCards)
         <*> (Form.Yield (CheckedInput.Make amountDueVar.Value)
-            |> Validation.Is (ValidateCheckedDecimalPositive) "Money must be positive number"
             |> Validation.Is (ValidateCheckedDecimalPlaces 2m) "Money must have up to two decimal places"
             )
         <*> Form.Many creditCards { Type=Debit; Flag="Visa"; Value=CheckedInput.Make(0.0m) } CreditCardPaymentForm
@@ -337,9 +340,6 @@ module Client =
             | SPA.PointOfSale ->
                 Doc.Concat [
                     h1 [] [text "SPA point of sale"]
-                    h1 [] [text $"float sum {1.0+0.1+2.0+0.2}"]
-                    h1 [] [text $"decimal sum {1m+0.1m+2m+0.2m}"]
-                    h1 [] [text $"decimal Round {Math.Round(1.12359m, 2m)}"]
                     TransactionArea (routerLocation)
                 ]
             | SPA.Checkout ->
