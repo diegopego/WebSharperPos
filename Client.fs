@@ -55,15 +55,33 @@ module Client =
     let ValidateCheckedDecimalPositive (f:CheckedInput<decimal>)=
         match f with
         // This should work
-        // | Valid(value, inputText) -> value > 0.0m
-        | Valid(value, inputText) -> MathJS.Math.Larger(value, 0.0m) |> As<bool>
-        | Invalid _ -> false
+        | Valid(value, inputText) -> value > 0.0m
+        // This works:
+        // | Valid(value, inputText) -> MathJS.Math.Larger(value, 0.0m) |> As<bool>
+        //| Valid(value, inputText) -> 
+        //    Console.Log("value", value)
+        //    let x = System.Decimal(0.0) < value
+        //    Console.Log("x", x)
+        //    x
+        | Invalid _ -> 
+            Console.Log("invalid", f)
+            false
         | Blank _ -> false
     
     let ValidateCheckedDecimalPlaces places (f:CheckedInput<decimal>) =
         match f with
+        // this should work
         | Valid(value, inputText) -> Math.Round(value, places) = value
-        | Invalid _ -> false
+        //| Valid(value, inputText) -> 
+        //    Console.Log("value", value)
+        //    let x = Math.Round(value, places)
+        //    Console.Log("x", x)
+        //    let y = x = value
+        //    Console.Log("y", x)
+        //    y
+        | Invalid _ -> 
+            Console.Log("invalid", f)
+            false
         | Blank _ -> false
     
     let CheckedInputValue (x:CheckedInput<decimal>)=
