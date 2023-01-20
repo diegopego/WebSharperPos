@@ -1,34 +1,26 @@
-﻿
-https://github.com/diegopego/WebSharperPos/blob/9b18d645f0fbd36c7207f0947a6f40d4e03f5790/Client.fs#L55
+My motivation for this PR is to be able to use Doc.InputType.Decimal [] price 0.1m like the one below:
+https://github.com/diegopego/WebSharperPos/blob/9b18d645f0fbd36c7207f0947a6f40d4e03f5790/Client.fs#L208
 
-```
-let ValidateCheckedDecimalPositive (f:CheckedInput<decimal>)=
-    match f with
-    // This should work
-    // | Valid(value, inputText) -> value > 0.0m
-    | Valid(value, inputText) -> MathJS.Math.Larger(value, 0.0m) |> As<bool>
-    | Invalid _ -> false
-    | Blank _ -> false
-```
+And be able to use decimal on the validation functions.
 
-https://github.com/diegopego/WebSharperPos/blob/9b18d645f0fbd36c7207f0947a6f40d4e03f5790/Client.fs#L63
-```
-let ValidateCheckedDecimalPlaces places (f:CheckedInput<decimal>) =
-    match f with
-    | Valid(value, inputText) ->
-        let r = Math.Round(value, places)
-        r = value
-    | Invalid _ -> false
-    | Blank _ -> false
-```
+I have the following validate functions:
 
+https://github.com/diegopego/WebSharperPos/blob/9b18d645f0fbd36c7207f0947a6f40d4e03f5790/Client.fs#L55-L61
 
-With this DecimalGetChecked version, the following occurs:
+https://github.com/diegopego/WebSharperPos/blob/9b18d645f0fbd36c7207f0947a6f40d4e03f5790/Client.fs#L63-L67
+
+Used by this form:
+https://github.com/diegopego/WebSharperPos/blob/9b18d645f0fbd36c7207f0947a6f40d4e03f5790/Client.fs#L178-L183
+
+I have made a naive approach and replicated [FloatGetChecked](https://github.com/diegopego/dotnet-websharper-ui/blob/a04dd8a49a72d00392aa39e4b5f3de11b27e9c45/WebSharper.UI/Attr.Client.fs#L410) functionality into DecimalGetChecked.
+
+When using JS.Plus within DecimalGetChecked, the following occurs:
 - `Math.Round(value, places) = value` don't work as expected
   - for example, 1.1 is inputed on the form, `Math.Round(value, places) = value` returns false, while should return true.
 - `value > 0.0m` works
-```
+
 https://github.com/diegopego/dotnet-websharper-ui/blob/a04dd8a49a72d00392aa39e4b5f3de11b27e9c45/WebSharper.UI/Attr.Client.fs#L443
+```
 let DecimalGetChecked : Get<CheckedInput<decimal>> = fun el ->
     let s = el?value
     if String.isBlank s then
@@ -40,7 +32,7 @@ let DecimalGetChecked : Get<CheckedInput<decimal>> = fun el ->
 ```
 
 
-When using DecimalGetChecked with Bignumber, the following occurs:
+When using Bignumber within DecimalGetChecked, the following occurs:
 - `Math.Round(value, places) = value` works as expected
 - `value > 0.0m` gives `Uncaught Error: Cannot compare function values.`
 - `MathJS.Math.Larger(value, 0.0m) |> As<bool>` works as expected
